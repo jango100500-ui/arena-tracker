@@ -29,8 +29,9 @@ app.get("/arena", async (req, res) => {
       })
     });
 
-    const data = await response.json();
-    res.status(response.status).json(data);
+    const text = await response.text();
+
+    res.status(response.status).send(text);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -55,8 +56,9 @@ app.post("/arena", async (req, res) => {
       })
     });
 
-    const data = await response.json();
-    res.status(response.status).json(data);
+    const text = await response.text();
+
+    res.status(response.status).send(text);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -80,8 +82,9 @@ app.post("/profile", async (req, res) => {
       })
     });
 
-    const data = await response.json();
-    res.status(response.status).json(data);
+    const text = await response.text();
+
+    res.status(response.status).send(text);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
