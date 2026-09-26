@@ -5,6 +5,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const COMLINK_URL = (process.env.COMLINK_URL || "https://arena-tracker-2uod.onrender.com").replace(/\/+$/, "");
 const ASSET_URL = (process.env.ASSET_URL || "https://arena-tracker-assets.onrender.com").replace(/\/+$/, "");
+const UNITS_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/units.json";
 
 app.use(cors());
 app.use(express.json());
@@ -32,35 +33,15 @@ async function fetchJson(url, options = {}) {
     return data;
 }
 
-async function requestComlink(path, payload) {
+async function requestComlink(path, payload = {}) {
     return fetchJson(`${COMLINK_URL}${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ payload })
+        body: JSON.stringify({
+            payload,
+            enums: false
+        })
     });
-}
-
-function findUnits(value) {
-    if (!value || typeof value !== "object") return null;
-
-    if (
-        Array.isArray(value) &&
-        value.some(item =>
-            item &&
-            typeof item === "object" &&
-            typeof item.baseId === "string" &&
-            typeof item.thumbnailName === "string"
-        )
-    ) {
-        return value;
-    }
-
-    for (const child of Object.values(value)) {
-        const found = findUnits(child);
-        if (found) return found;
-    }
-
-    return null;
 }
 
 async function getUnits() {
@@ -68,23 +49,11 @@ async function getUnits() {
         return unitsCache;
     }
 
-    const data = await requestComlink("/data", {
-        collection: "unitsList",
-        language: "eng_us",
-        enums: true,
-        match: { rarity: 7 },
-        project: {
-            baseId: 1,
-            nameKey: 1,
-            thumbnailName: 1,
-            combatType: 1
-        }
-    });
+    const data = await fetchJson(UNITS_URL);
+    const units = Array.isArray(data) ? data : data.data;
 
-    const units = findUnits(data);
-
-    if (!units) {
-        throw new Error("Units data not found in Comlink response");
+    if (!Array.isArray(units)) {
+        throw new Error("Invalid units data");
     }
 
     unitsCache = units;
@@ -98,26 +67,41 @@ async function getMetadata() {
         return metadataCache;
     }
 
-    metadataCache = await fetchJson(`${COMLINK_URL}/metadata`);
+    metadataCache = await requestComlink("/metadata");
     metadataCacheTime = Date.now();
 
     return metadataCache;
 }
 
-async function getUnit(definitionId) {
+function findUnit(units, definitionId) {
     const baseId = String(definitionId).split(":")[0];
-    const units = await getUnits();
 
-    const unit = units.find(item => item.baseId === baseId);
+    return units.find(unit =>
+        unit.baseId === baseId ||
+        unit.id === definitionId
+    );
+}
+
+async function getUnit(definitionId) {
+    const units = await getUnits();
+    const unit = findUnit(units, definitionId);
 
     if (!unit) {
-        throw new Error(`Unit not found: ${baseId}`);
+        throw new Error(`Unit not found: ${definitionId}`);
     }
 
     return {
         ...unit,
         definitionId
     };
+}
+
+function getAssetVersion(metadata) {
+    return (
+        metadata?.assetVersion ||
+        metadata?.data?.assetVersion ||
+        metadata?.metadata?.assetVersion
+    );
 }
 
 app.get("/health", (_, res) => {
@@ -223,14 +207,27 @@ app.get("/characterImage", async (req, res) => {
         }
 
         const unit = await getUnit(id);
-        const metadata = await getMetadata();
-        const version = metadata.assetVersion;
 
-        if (!version) {
-            return res.status(500).json({ error: "assetVersion not found in Comlink metadata" });
+        if (!unit.thumbnailName) {
+            return res.status(404).json({
+                error: "thumbnailName not found",
+                unit
+            });
         }
 
-        const assetName = String(unit.thumbnailName).replace(/^tex\./, "");
+        const metadata = await getMetadata();
+        const version = getAssetVersion(metadata);
+
+        if (!version) {
+            return res.status(500).json({
+                error: "assetVersion not found",
+                metadata
+            });
+        }
+
+        const assetName = String(unit.thumbnailName)
+            .replace(/^tex\./, "")
+            .replace(/\.[^/.]+$/, "");
 
         const url = new URL(`${ASSET_URL}/Asset/single`);
         url.searchParams.set("forceReDownload", "false");
@@ -242,20 +239,22 @@ app.get("/characterImage", async (req, res) => {
 
         if (!response.ok) {
             const text = await response.text();
+
             return res.status(response.status).json({
                 error: "Asset extractor error",
                 details: text.slice(0, 500),
-                unit,
-                version,
-                assetName
+                definitionId: id,
+                baseId: unit.baseId,
+                thumbnailName: unit.thumbnailName,
+                assetName,
+                version
             });
         }
 
-        const contentType = response.headers.get("content-type") || "image/png";
         const buffer = Buffer.from(await response.arrayBuffer());
 
         res.set("Cache-Control", "public, max-age=86400");
-        res.set("Content-Type", contentType);
+        res.set("Content-Type", response.headers.get("content-type") || "image/png");
         res.send(buffer);
     } catch (error) {
         res.status(500).json({ error: error.message });
