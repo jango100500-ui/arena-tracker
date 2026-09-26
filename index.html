@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -6,150 +6,246 @@
 <title>Arena Tracker</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#111;color:#eee;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-main{width:min(680px,100%);margin:auto;padding:28px 18px}
-h1{font-size:28px;margin:0 0 8px}
-p{color:#999;margin:0 0 24px}
-.row{display:flex;gap:10px}
-input{flex:1;min-width:0;background:#1c1c1c;border:1px solid #333;border-radius:10px;color:#fff;padding:14px;font-size:16px}
-button{background:#252525;border:1px solid #444;color:#fff;border-radius:10px;padding:14px 18px;font-size:15px;cursor:pointer}
-button:hover{background:#303030}
-.buttons{display:flex;gap:10px;margin-top:12px}
-.result{margin-top:24px;background:#191919;border-radius:12px;padding:18px}
-.info{font-size:17px;line-height:1.8}
-.label{color:#888}
-.jsonbox{margin-top:18px;background:#161616;border-radius:12px;overflow:hidden}
-.jsonhead{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#202020;color:#aaa}
-.copy{padding:6px 10px;font-size:13px}
-pre{margin:0;padding:14px;max-height:500px;overflow:auto;font-size:12px;line-height:1.5;color:#bbb;white-space:pre-wrap;word-break:break-word}
-.error{color:#ff7777}
+html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#101114;color:#f4f4f5}
+body{padding:24px 16px}
+.app{width:min(900px,100%);margin:0 auto}
+h1{margin:0 0 8px;font-size:28px}
+.subtitle{margin:0 0 22px;color:#8f929a}
+.input-row{display:flex;gap:10px;margin-bottom:10px}
+input{flex:1;min-width:0;padding:13px 15px;border:1px solid #303239;border-radius:12px;background:#18191d;color:#fff;font-size:16px;outline:none}
+input:focus{border-color:#666a74}
+button{border:0;border-radius:12px;padding:13px 18px;background:#e8e8ea;color:#111;font-size:15px;font-weight:600;cursor:pointer}
+button.secondary{background:#292b31;color:#f4f4f5}
+button:disabled{opacity:.5;cursor:default}
+.actions{display:flex;gap:10px}
+.status{min-height:24px;margin:14px 0;color:#8f929a}
+.card{background:#18191d;border:1px solid #292b31;border-radius:16px;padding:18px;margin-bottom:16px}
+.card h2{margin:0 0 14px;font-size:20px}
+.player-info{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.info{background:#202126;border-radius:12px;padding:12px}
+.info-label{font-size:12px;color:#858892;margin-bottom:5px}
+.info-value{font-size:15px;word-break:break-word}
+.arena-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.unit{min-width:0;text-align:center}
+.unit-image{width:100%;aspect-ratio:1;border-radius:12px;background:#0d0e10;object-fit:contain;display:block}
+.unit-name{margin-top:7px;font-size:12px;line-height:1.25;word-break:break-word;color:#d8d9dd}
+.rank{font-size:24px;font-weight:700;margin-bottom:16px}
+.json-card{background:#15161a;border-radius:14px;overflow:hidden;margin-top:20px}
+.json-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#1d1e23}
+.json-title{font-size:13px;color:#a9abb3}
+.copy{padding:7px 11px;border-radius:8px;font-size:12px;background:#303239;color:#fff}
+pre{margin:0;padding:14px;max-height:420px;overflow:auto;font-size:11px;line-height:1.45;color:#cfd1d7;white-space:pre-wrap;word-break:break-word}
 .hidden{display:none}
+.error{color:#ff8b8b}
+@media(max-width:650px){
+body{padding:18px 12px}
+h1{font-size:24px}
+.input-row{flex-direction:column}
+.actions button{flex:1}
+.player-info{grid-template-columns:1fr}
+.arena-grid{gap:7px}
+.unit-name{font-size:11px}
+}
 </style>
 </head>
 <body>
-<main>
+<div class="app">
 <h1>Arena Tracker</h1>
-<p>Введите Ally Code и выберите нужный раздел</p>
+<p class="subtitle">Введи Ally Code и выбери нужный режим</p>
 
-<div class="row">
-<input id="allyCode" inputmode="numeric" placeholder="Ally Code">
-</div>
-
-<div class="buttons">
-<button onclick="loadArena()">Арена</button>
-<button onclick="loadProfile()">Профиль</button>
+<div class="input-row">
+<input id="allyCode" inputmode="numeric" autocomplete="off" placeholder="Ally Code">
 </div>
 
-<div id="result" class="result hidden">
-<div id="info" class="info"></div>
+<div class="actions">
+<button id="arenaBtn">Арена</button>
+<button id="profileBtn" class="secondary">Профиль</button>
+</div>
 
-<div class="jsonbox">
-<div class="jsonhead">
-<span>Код</span>
-<button class="copy" onclick="copyJson()">Копировать</button>
+<div id="status" class="status"></div>
+
+<section id="result" class="hidden"></section>
+
+<section class="json-card">
+<div class="json-head">
+<span class="json-title">Код</span>
+<button id="copyBtn" class="copy">Копировать</button>
 </div>
-<pre id="json"></pre>
+<pre id="json">{}</pre>
+</section>
 </div>
-</div>
-</main>
 
 <script>
 const API="https://arena-tracker-proxy.onrender.com";
 
-let currentJson="";
+const allyCode=document.getElementById("allyCode");
+const arenaBtn=document.getElementById("arenaBtn");
+const profileBtn=document.getElementById("profileBtn");
+const status=document.getElementById("status");
+const result=document.getElementById("result");
+const json=document.getElementById("json");
+const copyBtn=document.getElementById("copyBtn");
 
-function code(){
-    const value=document.getElementById("allyCode").value.replace(/\D/g,"");
-    if(!value){
-        showError("Введите Ally Code");
-        return null;
-    }
-    return value;
+let lastData={};
+
+function setLoading(value){
+    arenaBtn.disabled=value;
+    profileBtn.disabled=value;
 }
 
-function showError(message){
-    const result=document.getElementById("result");
-    result.classList.remove("hidden");
-    document.getElementById("info").innerHTML=`<div class="error">${message}</div>`;
-    document.getElementById("json").textContent="";
+function setStatus(text,error=false){
+    status.textContent=text;
+    status.className=error?"status error":"status";
 }
 
-function findValue(obj,keys){
-    if(!obj||typeof obj!=="object") return null;
+function showJson(data){
+    lastData=data;
+    json.textContent=JSON.stringify(data,null,2);
+}
+
+function value(data,keys){
     for(const key of keys){
-        if(Object.prototype.hasOwnProperty.call(obj,key)&&typeof obj[key]==="string"&&obj[key]) return obj[key];
+        if(data?.[key]!==undefined&&data[key]!==null&&data[key]!=="") return data[key];
     }
-    for(const value of Object.values(obj)){
-        if(value&&typeof value==="object"){
-            const found=findValue(value,keys);
-            if(found) return found;
-        }
-    }
-    return null;
+    return "—";
 }
 
-function show(data,type){
-    currentJson=JSON.stringify(data,null,2);
-    document.getElementById("result").classList.remove("hidden");
-    document.getElementById("json").textContent=currentJson;
-
-    if(type==="arena"){
-        const profile=Array.isArray(data.pvpProfile)?data.pvpProfile[0]:null;
-        const rank=profile?.rank ?? findValue(data,["rank"]);
-        const name=findValue(data,["playerName","name","displayName"]);
-        const title=findValue(data,["title","playerTitle"]);
-        const guild=findValue(data,["guildName"]);
-
-        document.getElementById("info").innerHTML=`
-            ${rank!=null?`<div><span class="label">Место:</span> ${rank}</div>`:""}
-            ${name?`<div><span class="label">Имя:</span> ${name}</div>`:""}
-            ${title?`<div><span class="label">Титул:</span> ${title}</div>`:""}
-            ${guild?`<div><span class="label">Гильдия:</span> ${guild}</div>`:""}
-        `;
-    }else{
-        const name=findValue(data,["playerName","name","displayName"]);
-        const guild=findValue(data,["guildName"]);
-        document.getElementById("info").innerHTML=`
-            ${name?`<div><span class="label">Имя:</span> ${name}</div>`:""}
-            ${guild?`<div><span class="label">Гильдия:</span> ${guild}</div>`:""}
-        `;
-    }
+function escapeHtml(text){
+    return String(text).replace(/[&<>"']/g,char=>({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#039;"
+    }[char]));
 }
 
-async function request(url,type){
-    const allyCode=code();
-    if(!allyCode) return;
+function unitCard(unit){
+    const id=unit.unitDefId||"";
+    const baseId=id.split(":")[0];
+    const image=`${API}/characterImage?definitionId=${encodeURIComponent(id)}`;
 
-    document.getElementById("result").classList.remove("hidden");
-    document.getElementById("info").textContent="Загрузка...";
-    document.getElementById("json").textContent="";
+    return `
+        <div class="unit">
+            <img class="unit-image" src="${image}" alt="${escapeHtml(baseId)}" loading="lazy">
+            <div class="unit-name">${escapeHtml(baseId)}</div>
+        </div>
+    `;
+}
+
+function renderArena(data){
+    const profiles=Array.isArray(data.pvpProfile)?data.pvpProfile:[];
+    const title=value(data,["title","titleName","playerTitle"]);
+    const guild=value(data,["guildName","guild"]);
+    const name=value(data,["name","playerName"]);
+
+    result.innerHTML=`
+        <div class="card">
+            <h2>${escapeHtml(name)}</h2>
+            <div class="player-info">
+                <div class="info">
+                    <div class="info-label">Титул</div>
+                    <div class="info-value">${escapeHtml(title)}</div>
+                </div>
+                <div class="info">
+                    <div class="info-label">Гильдия</div>
+                    <div class="info-value">${escapeHtml(guild)}</div>
+                </div>
+                <div class="info">
+                    <div class="info-label">Ally Code</div>
+                    <div class="info-value">${escapeHtml(value(data,["allyCode"]))}</div>
+                </div>
+            </div>
+        </div>
+
+        ${profiles.map(profile=>{
+            const cells=profile?.squad?.cell||[];
+            return `
+                <div class="card">
+                    <h2>Арена ${profile.tab||""}</h2>
+                    <div class="rank">#${profile.rank??"—"}</div>
+                    <div class="arena-grid">
+                        ${cells.map(unitCard).join("")}
+                    </div>
+                </div>
+            `;
+        }).join("")}
+    `;
+    result.classList.remove("hidden");
+}
+
+function renderProfile(data){
+    const name=value(data,["name","playerName"]);
+    const title=value(data,["title","titleName","playerTitle"]);
+    const guild=value(data,["guildName","guild"]);
+    const level=value(data,["level"]);
+
+    result.innerHTML=`
+        <div class="card">
+            <h2>${escapeHtml(name)}</h2>
+            <div class="player-info">
+                <div class="info">
+                    <div class="info-label">Уровень</div>
+                    <div class="info-value">${escapeHtml(level)}</div>
+                </div>
+                <div class="info">
+                    <div class="info-label">Титул</div>
+                    <div class="info-value">${escapeHtml(title)}</div>
+                </div>
+                <div class="info">
+                    <div class="info-label">Гильдия</div>
+                    <div class="info-value">${escapeHtml(guild)}</div>
+                </div>
+            </div>
+        </div>
+    `;
+    result.classList.remove("hidden");
+}
+
+async function request(path,renderer){
+    const code=allyCode.value.replace(/\D/g,"");
+
+    if(!code){
+        setStatus("Введи Ally Code",true);
+        return;
+    }
+
+    setLoading(true);
+    setStatus("Загрузка...");
+    result.classList.add("hidden");
 
     try{
-        const response=await fetch(`${API}/${url}?allyCode=${allyCode}`);
+        const response=await fetch(`${API}${path}?allyCode=${encodeURIComponent(code)}`);
         const data=await response.json();
 
         if(!response.ok){
             throw new Error(data.error||`HTTP ${response.status}`);
         }
 
-        show(data,type);
+        showJson(data);
+        renderer(data);
+        setStatus("");
     }catch(error){
-        showError(error.message);
+        showJson({error:error.message});
+        setStatus(error.message,true);
+    }finally{
+        setLoading(false);
     }
 }
 
-function loadArena(){
-    request("arena","arena");
-}
+arenaBtn.addEventListener("click",()=>request("/arena",renderArena));
+profileBtn.addEventListener("click",()=>request("/profile",renderProfile));
 
-function loadProfile(){
-    request("profile","profile");
-}
+allyCode.addEventListener("keydown",event=>{
+    if(event.key==="Enter") request("/arena",renderArena);
+});
 
-async function copyJson(){
-    if(!currentJson) return;
-    await navigator.clipboard.writeText(currentJson);
-}
+copyBtn.addEventListener("click",async()=>{
+    await navigator.clipboard.writeText(json.textContent);
+    const old=copyBtn.textContent;
+    copyBtn.textContent="Скопировано";
+    setTimeout(()=>copyBtn.textContent=old,1200);
+});
 </script>
 </body>
 </html>
