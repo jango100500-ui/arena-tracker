@@ -5,6 +5,11 @@ const PORT = process.env.PORT || 10000;
 const COMLINK_URL =
   "https://arena-tracker-2uod.onrender.com";
 
+const ALLOWED_ROUTES = {
+  "/playerArena": "/playerArena",
+  "/player": "/player"
+};
+
 const server = http.createServer(async (req, res) => {
 
   // CORS
@@ -18,18 +23,17 @@ const server = http.createServer(async (req, res) => {
     "Content-Type"
   );
 
-  // Preflight request
+  // Preflight
   if (req.method === "OPTIONS") {
     res.writeHead(204);
     res.end();
     return;
   }
 
-  // Player Arena
-  if (
-    req.method === "POST" &&
-    req.url === "/playerArena"
-  ) {
+  // Проверяем endpoint
+  const targetPath = ALLOWED_ROUTES[req.url];
+
+  if (req.method === "POST" && targetPath) {
 
     try {
       let body = "";
@@ -40,13 +44,19 @@ const server = http.createServer(async (req, res) => {
 
       req.on("end", async () => {
 
+        console.log(
+          `POST ${req.url}`
+        );
+
         const response = await fetch(
-          `${COMLINK_URL}/playerArena`,
+          `${COMLINK_URL}${targetPath}`,
           {
             method: "POST",
+
             headers: {
               "Content-Type": "application/json"
             },
+
             body
           }
         );
@@ -68,9 +78,11 @@ const server = http.createServer(async (req, res) => {
         "Content-Type": "application/json"
       });
 
-      res.end(JSON.stringify({
-        error: error.toString()
-      }));
+      res.end(
+        JSON.stringify({
+          error: error.toString()
+        })
+      );
     }
 
     return;
@@ -80,11 +92,15 @@ const server = http.createServer(async (req, res) => {
     "Content-Type": "application/json"
   });
 
-  res.end(JSON.stringify({
-    message: "Route not found"
-  }));
+  res.end(
+    JSON.stringify({
+      message: "Route not found"
+    })
+  );
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Proxy listening on port ${PORT}`);
+  console.log(
+    `Proxy listening on port ${PORT}`
+  );
 });
