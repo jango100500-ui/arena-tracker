@@ -261,8 +261,7 @@ function getUnitAlignment(unit, categories) {
 
     if (
         resolved.includes("alignment_neutral") ||
-        text.includes("alignment_neutral") ||
-        text.includes("neutral")
+        text.includes("alignment_neutral")
     ) {
         return "neutral";
     }
@@ -327,7 +326,7 @@ async function enrichArena(arena, player) {
                         categoryIds.some(id => id.toLowerCase() === "galactic_legend")
                     );
                     const nameKey = unit.nameKey || "";
-                    const name = localizationEng[nameKey] || nameKey || baseId;
+                    const name = localizationRus[nameKey] || localizationEng[nameKey] || nameKey || baseId;
                     const alignment = isGalacticLegend ? "galactic_legend" : getUnitAlignment(unit, categories);
 
                     return {
