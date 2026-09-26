@@ -14,29 +14,81 @@ const ICONS_RAW_URL =
 const ICONS_REPO_URL =
   "https://github.com/tools4swgoh/swgoh-icons/tree/main";
 
-const GAME_DATA_TTL = 60 * 60 * 1000;
-const PORTRAIT_TTL = 6 * 60 * 60 * 1000;
+const CACHE_TTL = 6 * 60 * 60 * 1000;
+
+// ============================================================
+// CACHE
+// ============================================================
+
+let portraitsCache = null;
+let portraitsCacheTime = 0;
 
 let unitsCache = null;
-let unitsLoadedAt = 0;
+let unitsCacheTime = 0;
 
-let portraitCache = null;
-let portraitLoadedAt = 0;
-
+let portraitFuse = null;
 
 // ============================================================
-// HTTP
+// HELPERS
 // ============================================================
 
-async function fetchText(url, options = {}) {
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      "User-Agent": "arena-tracker/1.0",
-      ...(options.headers || {})
-    }
+function sendJson(res, status, data) {
+  const body = JSON.stringify(data);
+
+  res.writeHead(status, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Cache-Control": "no-cache"
   });
 
+  res.end(body);
+}
+
+function sendText(res, status, text) {
+  res.writeHead(status, {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
+  });
+
+  res.end(text);
+}
+
+async function readBody(req) {
+  return await new Promise((resolve, reject) => {
+    let body = "";
+
+    req.on("data", chunk => {
+      body += chunk;
+    });
+
+    req.on("end", () => {
+      resolve(body);
+    });
+
+    req.on("error", reject);
+  });
+}
+
+async function readJsonBody(req) {
+  const body = await readBody(req);
+
+  if (!body) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(body);
+  } catch {
+    throw new Error("Invalid JSON body");
+  }
+}
+
+async function fetchText(url, options = {}) {
+  const response = await fetch(url, options);
   const text = await response.text();
 
   if (!response.ok) {
@@ -48,7 +100,6 @@ async function fetchText(url, options = {}) {
   return text;
 }
 
-
 async function fetchJson(url, options = {}) {
   const text = await fetchText(url, options);
 
@@ -56,61 +107,184 @@ async function fetchJson(url, options = {}) {
     return JSON.parse(text);
   } catch {
     throw new Error(
-      `Invalid JSON: ${text.slice(0, 1000)}`
+      `Invalid JSON from ${url}: ${text.slice(0, 1000)}`
     );
   }
 }
 
+function normalizeName(value) {
+  if (!value) return "";
 
-// ============================================================
-// NORMALIZE
-// ============================================================
-
-function normalizeText(value) {
-  return String(value || "")
+  return String(value)
     .toLowerCase()
-    .normalize("NFD")
+    .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/%26/gi, "&")
-    .replace(/%22/gi, '"')
-    .replace(/["'’]/g, "")
-    .replace(/[._-]+/g, " ")
-    .replace(/[^a-z0-9а-яё&]+/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+    .replace(/[^a-z0-9]+/g, "");
 }
 
+function cleanUnitDefId(unitDefId) {
+  if (!unitDefId) return "";
 
-function getBaseId(definitionId) {
-  return String(definitionId || "")
-    .split(":")[0]
-    .trim()
-    .toUpperCase();
+  return String(unitDefId)
+    .replace(/:SEVEN_STAR$/i, "")
+    .replace(/:ONE_STAR$/i, "")
+    .replace(/:TWO_STAR$/i, "")
+    .replace(/:THREE_STAR$/i, "")
+    .replace(/:FOUR_STAR$/i, "")
+    .replace(/:FIVE_STAR$/i, "")
+    .replace(/:SIX_STAR$/i, "")
+    .replace(/:BASE$/i, "");
 }
-
 
 // ============================================================
-// COMLINK unitsList
+// PORTRAITS
+// ============================================================
+
+async function loadPortraits() {
+  if (
+    portraitsCache &&
+    Date.now() - portraitsCacheTime < CACHE_TTL
+  ) {
+    return portraitsCache;
+  }
+
+  console.log("Loading portrait index from GitHub...");
+
+  const html = await fetchText(ICONS_REPO_URL);
+
+  const portraits = [];
+
+  // Find every character portrait PNG in the GitHub directory.
+  const regex =
+    /65px-Unit-Character-[^"'<>\\]+?-portrait\.png/gi;
+
+  const matches = html.match(regex) || [];
+
+  const unique = [...new Set(matches)];
+
+  for (const filename of unique) {
+    const decoded = filename
+      .replace(/&quot;/g, '"')
+      .replace(/&#x27;/g, "'")
+      .replace(/&amp;/g, "&");
+
+    const withoutPrefix =
+      decoded.replace(/^65px-Unit-Character-/i, "");
+
+    const characterName =
+      withoutPrefix.replace(/-portrait\.png$/i, "");
+
+    portraits.push({
+      filename: decoded,
+      name: characterName,
+      normalized: normalizeName(characterName),
+
+      image:
+        `${ICONS_RAW_URL}/${encodeURIComponent(decoded)}`
+    });
+  }
+
+  // Sometimes GitHub's HTML contains escaped URLs.
+  // Add a second parser just in case.
+  if (portraits.length === 0) {
+    const rawRegex =
+      /65px-Unit-Character-[^"'<>\\]+?-portrait\.png/gi;
+
+    const rawMatches = html.match(rawRegex) || [];
+
+    for (const filename of rawMatches) {
+      const decoded = filename
+        .replace(/&quot;/g, '"')
+        .replace(/&#x27;/g, "'")
+        .replace(/&amp;/g, "&");
+
+      const withoutPrefix =
+        decoded.replace(/^65px-Unit-Character-/i, "");
+
+      const characterName =
+        withoutPrefix.replace(/-portrait\.png$/i, "");
+
+      portraits.push({
+        filename: decoded,
+        name: characterName,
+        normalized: normalizeName(characterName),
+        image:
+          `${ICONS_RAW_URL}/${encodeURIComponent(decoded)}`
+      });
+    }
+  }
+
+  // Remove duplicates.
+  const uniquePortraits = [];
+  const seen = new Set();
+
+  for (const portrait of portraits) {
+    if (seen.has(portrait.filename)) {
+      continue;
+    }
+
+    seen.add(portrait.filename);
+    uniquePortraits.push(portrait);
+  }
+
+  portraitsCache = uniquePortraits;
+  portraitsCacheTime = Date.now();
+
+  portraitFuse = new Fuse(portraitsCache, {
+    keys: [
+      "name",
+      "normalized"
+    ],
+    includeScore: true,
+    threshold: 0.35,
+    ignoreLocation: true
+  });
+
+  console.log(
+    `Portrait index loaded: ${portraitsCache.length}`
+  );
+
+  return portraitsCache;
+}
+
+// ============================================================
+// COMLINK GAME DATA
 // ============================================================
 
 async function loadUnits() {
-  const now = Date.now();
-
   if (
     unitsCache &&
-    now - unitsLoadedAt < GAME_DATA_TTL
+    Date.now() - unitsCacheTime < CACHE_TTL
   ) {
     return unitsCache;
   }
 
-  console.log(
-    "[UNITS] Loading unitsList from Comlink..."
-  );
+  console.log("Loading unitsList from Comlink...");
 
-  const payload = {
-    collection: "unitsList",
-    language: "ENG_US"
+  const requestBody = {
+    payload: {
+      collection: "unitsList",
+      language: "ENG_US",
+
+      enums: true,
+
+      match: {
+        rarity: 7
+      },
+
+      project: {
+        baseId: 1,
+        nameKey: 1,
+        thumbnailName: 1,
+        descKey: 1,
+        combatType: 1,
+        forceAlignment: 1,
+
+        skillReferenceList: {
+          skillId: 1
+        }
+      }
+    }
   };
 
   const response = await fetch(
@@ -119,496 +293,230 @@ async function loadUnits() {
       method: "POST",
 
       headers: {
-        "Content-Type":
-          "application/json",
-
-        "Accept":
-          "application/json"
+        "Content-Type": "application/json"
       },
 
-      body:
-        JSON.stringify(payload)
+      body: JSON.stringify(requestBody)
     }
   );
 
-  const text =
-    await response.text();
+  const text = await response.text();
 
   if (!response.ok) {
     throw new Error(
-      `Comlink /data ${response.status}: ${text.slice(0, 2000)}`
+      `Comlink /data ${response.status}: ${text}`
     );
   }
 
   let json;
 
   try {
-    json =
-      JSON.parse(text);
+    json = JSON.parse(text);
   } catch {
     throw new Error(
       `Comlink /data returned invalid JSON: ${text.slice(0, 2000)}`
     );
   }
 
-  console.log(
-    "[UNITS] Response keys:",
-    Object.keys(json)
-  );
+  let units = null;
 
-  let units = [];
-
-  /*
-   * Comlink versions могут отдавать
-   * коллекцию в разных формах.
-   */
+  // ----------------------------------------------------------
+  // Different Comlink versions/wrappers
+  // ----------------------------------------------------------
 
   if (Array.isArray(json)) {
     units = json;
   }
 
-  else if (Array.isArray(json.data)) {
+  if (!units && Array.isArray(json.data)) {
     units = json.data;
   }
 
-  else if (
+  if (!units && Array.isArray(json.unitsList)) {
+    units = json.unitsList;
+  }
+
+  if (
+    !units &&
     json.data &&
-    typeof json.data === "object"
+    Array.isArray(json.data.unitsList)
   ) {
-    units =
-      Object.values(json.data);
+    units = json.data.unitsList;
   }
 
-  else if (
-    Array.isArray(json.unitsList)
+  if (
+    !units &&
+    json.payload &&
+    Array.isArray(json.payload)
   ) {
-    units =
-      json.unitsList;
+    units = json.payload;
   }
 
-  else if (
-    json.unitsList &&
-    typeof json.unitsList === "object"
-  ) {
-    units =
-      Object.values(json.unitsList);
-  }
-
-  if (!units.length) {
-    console.log(
-      "[UNITS] Unexpected response:"
-    );
-
-    console.log(
-      JSON.stringify(json).slice(0, 5000)
-    );
-
+  if (!units) {
     throw new Error(
-      "Comlink /data не вернул unitsList"
+      `Unexpected /data response: ${JSON.stringify(json).slice(0, 5000)}`
     );
   }
 
-  const byBaseId =
-    new Map();
+  console.log(
+    `Units loaded from Comlink: ${units.length}`
+  );
 
-  const byId =
-    new Map();
+  unitsCache = units;
+  unitsCacheTime = Date.now();
 
-  const byThumbnail =
-    new Map();
+  return units;
+}
+
+// ============================================================
+// UNIT INDEX
+// ============================================================
+
+async function buildUnitIndex() {
+  const units = await loadUnits();
+
+  const byBaseId = new Map();
+  const byId = new Map();
+  const byThumbnail = new Map();
 
   for (const unit of units) {
-    if (
-      !unit ||
-      typeof unit !== "object"
-    ) {
+    if (!unit || typeof unit !== "object") {
       continue;
     }
 
     if (unit.baseId) {
       byBaseId.set(
-        String(
-          unit.baseId
-        ).toUpperCase(),
+        String(unit.baseId).toUpperCase(),
         unit
       );
     }
 
     if (unit.id) {
       byId.set(
-        String(
-          unit.id
-        ).toUpperCase(),
+        String(unit.id).toUpperCase(),
         unit
       );
     }
 
     if (unit.thumbnailName) {
       byThumbnail.set(
-        String(
-          unit.thumbnailName
-        ).toUpperCase(),
+        normalizeName(unit.thumbnailName),
         unit
       );
     }
   }
 
-  unitsCache = {
+  return {
     units,
     byBaseId,
     byId,
     byThumbnail
   };
-
-  unitsLoadedAt = now;
-
-  console.log(
-    `[UNITS] Loaded ${units.length} units`
-  );
-
-  console.log(
-    `[UNITS] baseIds: ${byBaseId.size}`
-  );
-
-  console.log(
-    `[UNITS] thumbnails: ${byThumbnail.size}`
-  );
-
-  return unitsCache;
 }
-
 
 // ============================================================
-// PORTRAITS
+// PORTRAIT MATCHING
 // ============================================================
 
-function decodeFilename(filename) {
-  try {
-    return decodeURIComponent(filename);
-  } catch {
-    return filename;
-  }
-}
+function createPortraitCandidates(unitDefId, unit) {
+  const candidates = [];
 
+  const baseId = cleanUnitDefId(unitDefId);
 
-function getPortraitName(filename) {
-  let name =
-    filename
-      .replace(
-        /^65px-Unit-Character-/i,
-        ""
-      )
-      .replace(
-        /-portrait\.png$/i,
-        ""
-      );
-
-  name =
-    decodeFilename(name);
-
-  name =
-    name.replace(
-      /_/g,
-      " "
-    );
-
-  return name;
-}
-
-
-function makePortraitUrl(filename) {
-  return (
-    `${ICONS_RAW_URL}/` +
-    encodeURI(filename)
-  );
-}
-
-
-async function loadPortraits() {
-  const now = Date.now();
-
-  if (
-    portraitCache &&
-    now - portraitLoadedAt < PORTRAIT_TTL
-  ) {
-    return portraitCache;
+  if (unitDefId) {
+    candidates.push(String(unitDefId));
   }
 
-  console.log(
-    "[PORTRAITS] Loading GitHub portrait list..."
-  );
-
-  const html =
-    await fetchText(
-      ICONS_REPO_URL
-    );
-
-  const files =
-    new Set();
-
-  const regex =
-    /65px-Unit-Character-[^"'<>]+?-portrait\.png/gi;
-
-  for (
-    const match of html.matchAll(regex)
-  ) {
-    const filename =
-      decodeFilename(
-        match[0]
-      );
-
-    files.add(
-      filename
-    );
+  if (baseId) {
+    candidates.push(baseId);
   }
-
-  const portraits =
-    [...files]
-      .map(
-        (filename) => {
-          const name =
-            getPortraitName(
-              filename
-            );
-
-          return {
-            filename,
-
-            name,
-
-            normalized:
-              normalizeText(
-                name
-              ),
-
-            url:
-              makePortraitUrl(
-                filename
-              )
-          };
-        }
-      )
-      .filter(
-        (x) =>
-          x.normalized
-      );
-
-  if (!portraits.length) {
-    throw new Error(
-      "Не найдено ни одного character portrait"
-    );
-  }
-
-  portraitCache =
-    portraits;
-
-  portraitLoadedAt =
-    now;
-
-  console.log(
-    `[PORTRAITS] Loaded ${portraits.length} portraits`
-  );
-
-  return portraits;
-}
-
-
-// ============================================================
-// FIND UNIT
-// ============================================================
-
-function findUnit(
-  units,
-  definitionId
-) {
-  const baseId =
-    getBaseId(
-      definitionId
-    );
-
-  const fullId =
-    String(
-      definitionId
-    )
-      .trim()
-      .toUpperCase();
-
-  /*
-   * Сначала полный ID.
-   */
-
-  let unit =
-    units.byId.get(
-      fullId
-    );
-
-  /*
-   * Потом baseId.
-   */
-
-  if (!unit) {
-    unit =
-      units.byBaseId.get(
-        baseId
-      );
-  }
-
-  return unit || null;
-}
-
-
-// ============================================================
-// BUILD SEARCH CANDIDATES
-// ============================================================
-
-function getCandidates(
-  unit,
-  baseId
-) {
-  const result =
-    [];
 
   if (unit) {
-
     if (unit.baseId) {
-      result.push(
-        String(
-          unit.baseId
-        )
-      );
-    }
-
-    if (unit.nameKey) {
-      result.push(
-        String(
-          unit.nameKey
-        )
-      );
-    }
-
-    if (unit.thumbnailName) {
-      result.push(
-        String(
-          unit.thumbnailName
-        )
-      );
+      candidates.push(String(unit.baseId));
     }
 
     if (unit.id) {
-      result.push(
-        String(
-          unit.id
-        )
-      );
+      candidates.push(String(unit.id));
+    }
+
+    if (unit.thumbnailName) {
+      candidates.push(String(unit.thumbnailName));
+    }
+
+    if (unit.nameKey) {
+      candidates.push(String(unit.nameKey));
+    }
+
+    if (unit.descKey) {
+      candidates.push(String(unit.descKey));
     }
   }
 
-  result.push(
-    baseId
-  );
-
   return [
     ...new Set(
-      result
+      candidates
         .filter(Boolean)
+        .map(String)
     )
   ];
 }
 
+function findExactPortrait(candidates, portraits) {
+  const normalizedCandidates =
+    candidates
+      .map(normalizeName)
+      .filter(Boolean);
 
-// ============================================================
-// SPECIAL THUMBNAIL NORMALIZATION
-// ============================================================
+  if (!normalizedCandidates.length) {
+    return null;
+  }
 
-function normalizeThumbnail(
-  value
-) {
-  return normalizeText(
-    String(
-      value || ""
-    )
-      .replace(
-        /^tex\.charui\./i,
-        ""
-      )
-      .replace(
-        /^charui\./i,
-        ""
-      )
-  );
-}
+  // ----------------------------------------------------------
+  // Exact normalized filename/name matching
+  // ----------------------------------------------------------
 
+  for (const candidate of normalizedCandidates) {
+    const found = portraits.find(
+      portrait =>
+        portrait.normalized === candidate
+    );
 
-// ============================================================
-// EXACT MATCH
-// ============================================================
-
-function exactMatch(
-  portraits,
-  unit,
-  candidates
-) {
-  /*
-   * thumbnailName — самый важный источник.
-   */
-
-  if (
-    unit &&
-    unit.thumbnailName
-  ) {
-    const thumbnail =
-      normalizeThumbnail(
-        unit.thumbnailName
-      );
-
-    for (
-      const portrait of portraits
-    ) {
-      const portraitName =
-        normalizeText(
-          portrait.name
-        );
-
-      if (
-        portraitName ===
-        thumbnail
-      ) {
-        return {
-          portrait,
-          method:
-            "thumbnail-exact",
-          score:
-            1000
-        };
-      }
+    if (found) {
+      return {
+        portrait: found,
+        method: "exact-normalized",
+        score: 0
+      };
     }
   }
 
-  /*
-   * Затем nameKey / baseId.
-   */
+  // ----------------------------------------------------------
+  // More tolerant matching:
+  // Captain Rex
+  // CAPTAINREX
+  // Captain_Rex
+  // etc.
+  // ----------------------------------------------------------
 
-  const normalizedCandidates =
-    candidates
-      .map(
-        normalizeText
-      )
-      .filter(Boolean);
+  for (const candidate of normalizedCandidates) {
+    const found = portraits.find(
+      portrait => {
+        const p = portrait.normalized;
 
-  for (
-    const portrait of portraits
-  ) {
-    if (
-      normalizedCandidates.includes(
-        portrait.normalized
-      )
-    ) {
+        return (
+          p === candidate ||
+          p.includes(candidate) ||
+          candidate.includes(p)
+        );
+      }
+    );
+
+    if (found) {
       return {
-        portrait,
-        method:
-          "name-exact",
-        score:
-          900
+        portrait: found,
+        method: "partial-normalized",
+        score: 0.1
       };
     }
   }
@@ -616,74 +524,24 @@ function exactMatch(
   return null;
 }
 
+function findFuzzyPortrait(candidates, portraits) {
+  if (!portraitFuse) {
+    return null;
+  }
 
-// ============================================================
-// FUZZY FALLBACK
-// ============================================================
+  const results = [];
 
-function fuzzyMatch(
-  portraits,
-  candidates
-) {
-  const fuse =
-    new Fuse(
-      portraits,
-      {
-        keys: [
-          {
-            name:
-              "normalized",
-            weight: 1
-          },
-
-          {
-            name:
-              "name",
-            weight: 0.5
-          }
-        ],
-
-        threshold:
-          0.18,
-
-        distance:
-          100,
-
-        ignoreLocation:
-          true,
-
-        includeScore:
-          true
-      }
-    );
-
-  const results =
-    [];
-
-  for (
-    const candidate of candidates
-  ) {
-    const query =
-      normalizeText(
-        candidate
-      );
-
-    if (!query) {
+  for (const candidate of candidates) {
+    if (!candidate) {
       continue;
     }
 
-    const found =
-      fuse.search(
-        query
-      );
+    const matches = portraitFuse.search(
+      String(candidate)
+    );
 
-    for (
-      const result of found
-    ) {
-      results.push({
-        ...result,
-        query
-      });
+    for (const match of matches) {
+      results.push(match);
     }
   }
 
@@ -697,814 +555,564 @@ function fuzzyMatch(
       (b.score ?? 1)
   );
 
-  return results[0];
-}
+  const best = results[0];
 
-
-// ============================================================
-// MAIN IMAGE RESOLVER
-// ============================================================
-
-async function findCharacterImage(
-  unitDefId
-) {
-  const started =
-    Date.now();
-
-  const definitionId =
-    String(
-      unitDefId || ""
-    ).trim();
-
-  if (!definitionId) {
-    return {
-      image: null,
-
-      debug: {
-        method:
-          "empty-id"
-      }
-    };
+  if (!best || !best.item) {
+    return null;
   }
-
-  const baseId =
-    getBaseId(
-      definitionId
-    );
-
-  const units =
-    await loadUnits();
-
-  const portraits =
-    await loadPortraits();
-
-  const unit =
-    findUnit(
-      units,
-      definitionId
-    );
-
-  const candidates =
-    getCandidates(
-      unit,
-      baseId
-    );
-
-  console.log(
-    "----------------------------------------"
-  );
-
-  console.log(
-    `[PORTRAIT] ${definitionId}`
-  );
-
-  console.log(
-    `[PORTRAIT] baseId: ${baseId}`
-  );
-
-  console.log(
-    "[PORTRAIT] unit:",
-    unit
-      ? {
-          id:
-            unit.id ||
-            null,
-
-          baseId:
-            unit.baseId ||
-            null,
-
-          nameKey:
-            unit.nameKey ||
-            null,
-
-          thumbnailName:
-            unit.thumbnailName ||
-            null
-        }
-      : "NOT FOUND"
-  );
-
-  console.log(
-    "[PORTRAIT] candidates:",
-    candidates
-  );
-
-  /*
-   * EXACT
-   */
-
-  const exact =
-    exactMatch(
-      portraits,
-      unit,
-      candidates
-    );
-
-  if (exact) {
-    console.log(
-      `[PORTRAIT] EXACT ✓ ${exact.portrait.filename}`
-    );
-
-    return {
-      image:
-        exact.portrait.url,
-
-      match:
-        exact.portrait.name,
-
-      debug: {
-        method:
-          exact.method,
-
-        score:
-          exact.score,
-
-        definitionId,
-
-        baseId,
-
-        unitFound:
-          !!unit,
-
-        unit:
-          unit
-            ? {
-                id:
-                  unit.id ||
-                  null,
-
-                baseId:
-                  unit.baseId ||
-                  null,
-
-                nameKey:
-                  unit.nameKey ||
-                  null,
-
-                thumbnailName:
-                  unit.thumbnailName ||
-                  null
-              }
-            : null,
-
-        candidates,
-
-        portrait:
-          exact.portrait.filename,
-
-        elapsedMs:
-          Date.now() -
-          started
-      }
-    };
-  }
-
-  /*
-   * FUZZY
-   */
-
-  const fuzzy =
-    fuzzyMatch(
-      portraits,
-      candidates
-    );
-
-  if (fuzzy) {
-    console.log(
-      `[PORTRAIT] FUZZY ⚠ ${fuzzy.item.filename}`
-    );
-
-    return {
-      image:
-        fuzzy.item.url,
-
-      match:
-        fuzzy.item.name,
-
-      debug: {
-        method:
-          "fuzzy-fallback",
-
-        score:
-          fuzzy.score,
-
-        query:
-          fuzzy.query,
-
-        definitionId,
-
-        baseId,
-
-        unitFound:
-          !!unit,
-
-        unit:
-          unit
-            ? {
-                id:
-                  unit.id ||
-                  null,
-
-                baseId:
-                  unit.baseId ||
-                  null,
-
-                nameKey:
-                  unit.nameKey ||
-                  null,
-
-                thumbnailName:
-                  unit.thumbnailName ||
-                  null
-              }
-            : null,
-
-        candidates,
-
-        portrait:
-          fuzzy.item.filename,
-
-        elapsedMs:
-          Date.now() -
-          started
-      }
-    };
-  }
-
-  /*
-   * NOT FOUND
-   */
-
-  console.log(
-    `[PORTRAIT] NOT FOUND ✗ ${definitionId}`
-  );
 
   return {
-    image: null,
-
-    match: null,
-
-    debug: {
-      method:
-        "not-found",
-
-      definitionId,
-
-      baseId,
-
-      unitFound:
-        !!unit,
-
-      unit:
-        unit
-          ? {
-              id:
-                unit.id ||
-                null,
-
-              baseId:
-                unit.baseId ||
-                null,
-
-              nameKey:
-                unit.nameKey ||
-                null,
-
-              thumbnailName:
-                unit.thumbnailName ||
-                null
-            }
-          : null,
-
-      candidates,
-
-      portraitsAvailable:
-        portraits.length,
-
-      elapsedMs:
-        Date.now() -
-        started
-    }
+    portrait: best.item,
+    method: "fuzzy",
+    score: best.score
   };
 }
 
-
 // ============================================================
-// COMLINK PROXY
+// CHARACTER IMAGE
 // ============================================================
 
-async function proxyToComlink(
-  path,
-  body
-) {
-  console.log(
-    `[COMLINK] POST ${path}`
-  );
+async function findCharacterImage(unitDefId) {
+  const portraits = await loadPortraits();
+  const unitIndex = await buildUnitIndex();
 
-  const response =
-    await fetch(
-      `${COMLINK_URL}${path}`,
-      {
-        method:
-          "POST",
+  const cleanId =
+    cleanUnitDefId(unitDefId);
 
-        headers: {
-          "Content-Type":
-            "application/json",
+  const upperId =
+    String(unitDefId || "").toUpperCase();
 
-          "Accept":
-            "application/json"
-        },
+  const upperCleanId =
+    cleanId.toUpperCase();
 
-        body:
-          JSON.stringify(body)
+  let unit =
+    unitIndex.byId.get(upperId) ||
+    unitIndex.byBaseId.get(upperCleanId);
+
+  // Sometimes Comlink has a unit id with additional suffixes.
+  if (!unit) {
+    for (const candidate of unitIndex.units) {
+      if (!candidate) continue;
+
+      const candidateBase =
+        String(candidate.baseId || "")
+          .toUpperCase();
+
+      const candidateId =
+        String(candidate.id || "")
+          .toUpperCase();
+
+      if (
+        candidateBase === upperCleanId ||
+        candidateId === upperId
+      ) {
+        unit = candidate;
+        break;
       }
-    );
-
-  const text =
-    await response.text();
-
-  if (!response.ok) {
-    throw new Error(
-      `Comlink ${response.status}: ${text.slice(0, 2000)}`
-    );
+    }
   }
 
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new Error(
-      `Comlink returned invalid JSON: ${text.slice(0, 2000)}`
+  const candidates =
+    createPortraitCandidates(
+      unitDefId,
+      unit
     );
+
+  console.log(
+    "Portrait search:",
+    unitDefId
+  );
+
+  console.log(
+    "Resolved unit:",
+    unit
+      ? {
+          baseId: unit.baseId,
+          id: unit.id,
+          thumbnailName: unit.thumbnailName,
+          nameKey: unit.nameKey
+        }
+      : null
+  );
+
+  console.log(
+    "Candidates:",
+    candidates
+  );
+
+  // ----------------------------------------------------------
+  // Exact / partial
+  // ----------------------------------------------------------
+
+  const exact =
+    findExactPortrait(
+      candidates,
+      portraits
+    );
+
+  if (exact) {
+    return {
+      ok: true,
+
+      image:
+        exact.portrait.image,
+
+      filename:
+        exact.portrait.filename,
+
+      match:
+        exact.method,
+
+      score:
+        exact.score,
+
+      unit: unit
+        ? {
+            baseId: unit.baseId,
+            id: unit.id,
+            thumbnailName:
+              unit.thumbnailName,
+            nameKey:
+              unit.nameKey
+          }
+        : null,
+
+      candidates
+    };
   }
-}
 
+  // ----------------------------------------------------------
+  // Fuse fallback
+  // ----------------------------------------------------------
 
-// ============================================================
-// BODY
-// ============================================================
+  const fuzzy =
+    findFuzzyPortrait(
+      candidates,
+      portraits
+    );
 
-function readBody(req) {
-  return new Promise(
-    (resolve, reject) => {
-      let body = "";
+  if (fuzzy) {
+    return {
+      ok: true,
 
-      req.on(
-        "data",
-        (chunk) => {
-          body += chunk;
+      image:
+        fuzzy.portrait.image,
 
-          if (
-            body.length >
-            2_000_000
-          ) {
-            reject(
-              new Error(
-                "Request body too large"
-              )
-            );
+      filename:
+        fuzzy.portrait.filename,
 
-            req.destroy();
+      match:
+        fuzzy.method,
+
+      score:
+        fuzzy.score,
+
+      unit: unit
+        ? {
+            baseId: unit.baseId,
+            id: unit.id,
+            thumbnailName:
+              unit.thumbnailName,
+            nameKey:
+              unit.nameKey
           }
+        : null,
+
+      candidates
+    };
+  }
+
+  // ----------------------------------------------------------
+  // Not found
+  // ----------------------------------------------------------
+
+  return {
+    ok: false,
+
+    error: "IMAGE_NOT_FOUND",
+
+    unitDefId,
+
+    cleanId,
+
+    unit: unit
+      ? {
+          baseId: unit.baseId,
+          id: unit.id,
+          thumbnailName:
+            unit.thumbnailName,
+          nameKey:
+            unit.nameKey
         }
-      );
+      : null,
 
-      req.on(
-        "end",
-        () => {
-          if (!body) {
-            resolve({});
-            return;
-          }
+    candidates,
 
-          try {
-            resolve(
-              JSON.parse(body)
-            );
-          } catch {
-            reject(
-              new Error(
-                "Invalid JSON body"
-              )
-            );
-          }
-        }
-      );
-
-      req.on(
-        "error",
-        reject
-      );
-    }
-  );
+    portraitCount:
+      portraits.length
+  };
 }
-
-
-// ============================================================
-// RESPONSES
-// ============================================================
-
-function sendJson(
-  res,
-  status,
-  data
-) {
-  res.writeHead(
-    status,
-    {
-      "Content-Type":
-        "application/json; charset=utf-8",
-
-      "Access-Control-Allow-Origin":
-        "*",
-
-      "Access-Control-Allow-Methods":
-        "GET, POST, OPTIONS",
-
-      "Access-Control-Allow-Headers":
-        "Content-Type",
-
-      "Cache-Control":
-        "no-store"
-    }
-  );
-
-  res.end(
-    JSON.stringify(data)
-  );
-}
-
-
-function sendText(
-  res,
-  status,
-  text
-) {
-  res.writeHead(
-    status,
-    {
-      "Content-Type":
-        "text/plain; charset=utf-8",
-
-      "Access-Control-Allow-Origin":
-        "*"
-    }
-  );
-
-  res.end(text);
-}
-
 
 // ============================================================
 // SERVER
 // ============================================================
 
-const server =
-  http.createServer(
-    async (
-      req,
-      res
-    ) => {
-      try {
-
-        // ------------------------------------------------------
-        // OPTIONS
-        // ------------------------------------------------------
-
-        if (
-          req.method ===
-          "OPTIONS"
-        ) {
-          res.writeHead(
-            204,
-            {
-              "Access-Control-Allow-Origin":
-                "*",
-
-              "Access-Control-Allow-Methods":
-                "GET, POST, OPTIONS",
-
-              "Access-Control-Allow-Headers":
-                "Content-Type"
-            }
-          );
-
-          res.end();
-
-          return;
-        }
-
-
-        const url =
-          new URL(
-            req.url,
-            `http://${req.headers.host}`
-          );
-
-
-        // ------------------------------------------------------
-        // ROOT
-        // ------------------------------------------------------
-
-        if (
-          url.pathname === "/" &&
-          req.method === "GET"
-        ) {
-          sendText(
-            res,
-            200,
-            "Arena Tracker Proxy OK"
-          );
-
-          return;
-        }
-
-
-        // ------------------------------------------------------
-        // HEALTH
-        // ------------------------------------------------------
-
-        if (
-          url.pathname ===
-            "/health" &&
-          req.method === "GET"
-        ) {
-          sendJson(
-            res,
-            200,
-            {
-              ok: true,
-
-              service:
-                "arena-tracker-proxy",
-
-              comlink:
-                COMLINK_URL,
-
-              unitsLoaded:
-                !!unitsCache,
-
-              portraitsLoaded:
-                !!portraitCache
-            }
-          );
-
-          return;
-        }
-
-
-        // ------------------------------------------------------
-        // GAME DATA STATUS
-        // ------------------------------------------------------
-
-        if (
-          url.pathname ===
-            "/gameDataStatus" &&
-          req.method === "GET"
-        ) {
-          try {
-            const units =
-              await loadUnits();
-
-            sendJson(
-              res,
-              200,
-              {
-                ok: true,
-
-                units:
-                  units.units.length,
-
-                baseIds:
-                  units.byBaseId.size,
-
-                thumbnails:
-                  units.byThumbnail.size,
-
-                cacheAge:
-                  Date.now() -
-                  unitsLoadedAt
-              }
-            );
-          } catch (error) {
-            sendJson(
-              res,
-              500,
-              {
-                ok: false,
-
-                error:
-                  error.message,
-
-                stack:
-                  error.stack
-              }
-            );
-          }
-
-          return;
-        }
-
-
-        // ------------------------------------------------------
-        // PORTRAIT STATUS
-        // ------------------------------------------------------
-
-        if (
-          url.pathname ===
-            "/portraitStatus" &&
-          req.method === "GET"
-        ) {
-          try {
-            const portraits =
-              await loadPortraits();
-
-            sendJson(
-              res,
-              200,
-              {
-                ok: true,
-
-                portraits:
-                  portraits.length,
-
-                cacheAge:
-                  Date.now() -
-                  portraitLoadedAt
-              }
-            );
-          } catch (error) {
-            sendJson(
-              res,
-              500,
-              {
-                ok: false,
-
-                error:
-                  error.message,
-
-                stack:
-                  error.stack
-              }
-            );
-          }
-
-          return;
-        }
-
-
-        // ------------------------------------------------------
-        // CHARACTER IMAGE
-        // ------------------------------------------------------
-
-        if (
-          url.pathname ===
-            "/characterImage" &&
-          req.method === "POST"
-        ) {
-          const body =
-            await readBody(req);
-
-          const unitDefId =
-            body.unitDefId ||
-            body.definitionId ||
-            body.defId;
-
-          try {
-            const result =
-              await findCharacterImage(
-                unitDefId
-              );
-
-            sendJson(
-              res,
-              200,
-              {
-                unitDefId,
-
-                ...result
-              }
-            );
-          } catch (error) {
-            console.error(
-              "[PORTRAIT ERROR]",
-              error
-            );
-
-            sendJson(
-              res,
-              500,
-              {
-                unitDefId,
-
-                image: null,
-
-                error:
-                  error.message,
-
-                debug: {
-                  stack:
-                    error.stack
-                }
-              }
-            );
-          }
-
-          return;
-        }
-
-
-        // ------------------------------------------------------
-        // PLAYER ARENA
-        // ------------------------------------------------------
-
-        if (
-          url.pathname ===
-            "/playerArena" &&
-          req.method === "POST"
-        ) {
-          const body =
-            await readBody(req);
-
-          const data =
-            await proxyToComlink(
-              "/playerArena",
-              body
-            );
-
-          sendJson(
-            res,
-            200,
-            data
-          );
-
-          return;
-        }
-
-
-        // ------------------------------------------------------
-        // PLAYER
-        // ------------------------------------------------------
-
-        if (
-          url.pathname ===
-            "/player" &&
-          req.method === "POST"
-        ) {
-          const body =
-            await readBody(req);
-
-          const data =
-            await proxyToComlink(
-              "/player",
-              body
-            );
-
-          sendJson(
-            res,
-            200,
-            data
-          );
-
-          return;
-        }
-
-
-        // ------------------------------------------------------
-        // 404
-        // ------------------------------------------------------
-
-        sendJson(
-          res,
-          404,
-          {
-            error:
-              "Not found"
-          }
-        );
-
-      } catch (error) {
-        console.error(
-          "[SERVER ERROR]",
-          error
-        );
-
-        sendJson(
-          res,
-          500,
-          {
-            error:
-              error.message,
-
-            stack:
-              error.stack
-          }
-        );
+const server = http.createServer(
+  async (req, res) => {
+    try {
+      // ------------------------------------------------------
+      // CORS preflight
+      // ------------------------------------------------------
+
+      if (req.method === "OPTIONS") {
+        res.writeHead(204, {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers":
+            "Content-Type",
+          "Access-Control-Allow-Methods":
+            "GET,POST,OPTIONS"
+        });
+
+        res.end();
+        return;
       }
-    }
-  );
 
+      const url =
+        new URL(
+          req.url,
+          `http://${req.headers.host}`
+        );
+
+      const pathname =
+        url.pathname;
+
+      // ------------------------------------------------------
+      // HEALTH
+      // ------------------------------------------------------
+
+      if (
+        pathname === "/health" &&
+        req.method === "GET"
+      ) {
+        sendJson(res, 200, {
+          ok: true,
+          service: "arena-tracker-proxy",
+          comlink: COMLINK_URL,
+          time: new Date().toISOString()
+        });
+
+        return;
+      }
+
+      // ------------------------------------------------------
+      // PORTRAIT STATUS
+      // ------------------------------------------------------
+
+      if (
+        pathname === "/portraitStatus" &&
+        req.method === "GET"
+      ) {
+        const portraits =
+          await loadPortraits();
+
+        sendJson(res, 200, {
+          ok: true,
+          portraits: portraits.length,
+
+          cacheAge:
+            portraitsCacheTime
+              ? Math.floor(
+                  (Date.now() -
+                    portraitsCacheTime) /
+                    1000
+                )
+              : null
+        });
+
+        return;
+      }
+
+      // ------------------------------------------------------
+      // GAME DATA STATUS
+      // ------------------------------------------------------
+
+      if (
+        pathname === "/gameDataStatus" &&
+        req.method === "GET"
+      ) {
+        const units =
+          await loadUnits();
+
+        sendJson(res, 200, {
+          ok: true,
+
+          units: units.length,
+
+          cacheAge:
+            unitsCacheTime
+              ? Math.floor(
+                  (Date.now() -
+                    unitsCacheTime) /
+                    1000
+                )
+              : null,
+
+          sample:
+            units.slice(0, 3).map(unit => ({
+              baseId: unit.baseId,
+              id: unit.id,
+              thumbnailName:
+                unit.thumbnailName,
+              nameKey:
+                unit.nameKey
+            }))
+        });
+
+        return;
+      }
+
+      // ------------------------------------------------------
+      // CHARACTER IMAGE
+      // ------------------------------------------------------
+
+      if (
+        pathname === "/characterImage" &&
+        req.method === "POST"
+      ) {
+        const body =
+          await readJsonBody(req);
+
+        const unitDefId =
+          body.unitDefId;
+
+        if (!unitDefId) {
+          sendJson(res, 400, {
+            ok: false,
+            error:
+              "unitDefId is required"
+          });
+
+          return;
+        }
+
+        const result =
+          await findCharacterImage(
+            unitDefId
+          );
+
+        sendJson(res, 200, result);
+
+        return;
+      }
+
+      // ------------------------------------------------------
+      // PLAYER ARENA
+      // ------------------------------------------------------
+
+      if (
+        pathname === "/playerArena" &&
+        req.method === "POST"
+      ) {
+        const body =
+          await readJsonBody(req);
+
+        const allyCode =
+          body.allyCode;
+
+        if (!allyCode) {
+          sendJson(res, 400, {
+            ok: false,
+            error:
+              "allyCode is required"
+          });
+
+          return;
+        }
+
+        const response =
+          await fetch(
+            `${COMLINK_URL}/playerArena`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+                allyCode:
+                  String(allyCode)
+              })
+            }
+          );
+
+        const text =
+          await response.text();
+
+        if (!response.ok) {
+          throw new Error(
+            `Comlink /playerArena ${response.status}: ${text}`
+          );
+        }
+
+        let json;
+
+        try {
+          json =
+            JSON.parse(text);
+        } catch {
+          throw new Error(
+            `Invalid JSON from /playerArena: ${text.slice(0, 1000)}`
+          );
+        }
+
+        sendJson(res, 200, json);
+
+        return;
+      }
+
+      // ------------------------------------------------------
+      // PLAYER
+      // ------------------------------------------------------
+
+      if (
+        pathname === "/player" &&
+        req.method === "POST"
+      ) {
+        const body =
+          await readJsonBody(req);
+
+        const allyCode =
+          body.allyCode;
+
+        if (!allyCode) {
+          sendJson(res, 400, {
+            ok: false,
+            error:
+              "allyCode is required"
+          });
+
+          return;
+        }
+
+        const response =
+          await fetch(
+            `${COMLINK_URL}/player`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+                allyCode:
+                  String(allyCode)
+              })
+            }
+          );
+
+        const text =
+          await response.text();
+
+        if (!response.ok) {
+          throw new Error(
+            `Comlink /player ${response.status}: ${text}`
+          );
+        }
+
+        let json;
+
+        try {
+          json =
+            JSON.parse(text);
+        } catch {
+          throw new Error(
+            `Invalid JSON from /player: ${text.slice(0, 1000)}`
+          );
+        }
+
+        sendJson(res, 200, json);
+
+        return;
+      }
+
+      // ------------------------------------------------------
+      // PROXY RAW DATA
+      // ------------------------------------------------------
+
+      if (
+        pathname === "/data" &&
+        req.method === "POST"
+      ) {
+        const body =
+          await readBody(req);
+
+        const response =
+          await fetch(
+            `${COMLINK_URL}/data`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body
+            }
+          );
+
+        const text =
+          await response.text();
+
+        res.writeHead(
+          response.status,
+          {
+            "Content-Type":
+              "application/json; charset=utf-8",
+
+            "Access-Control-Allow-Origin":
+              "*"
+          }
+        );
+
+        res.end(text);
+
+        return;
+      }
+
+      // ------------------------------------------------------
+      // 404
+      // ------------------------------------------------------
+
+      sendJson(res, 404, {
+        ok: false,
+        error: "Not found",
+        path: pathname
+      });
+    } catch (error) {
+      console.error(
+        "SERVER ERROR:",
+        error
+      );
+
+      sendJson(res, 500, {
+        ok: false,
+
+        error:
+          error?.message ||
+          String(error),
+
+        stack:
+          error?.stack ||
+          null
+      });
+    }
+  }
+);
 
 // ============================================================
 // START
@@ -1514,31 +1122,11 @@ server.listen(
   PORT,
   () => {
     console.log(
-      "========================================"
+      `Arena Tracker Proxy listening on port ${PORT}`
     );
 
     console.log(
-      "ARENA TRACKER PROXY"
-    );
-
-    console.log(
-      `PORT: ${PORT}`
-    );
-
-    console.log(
-      `COMLINK: ${COMLINK_URL}`
-    );
-
-    console.log(
-      "UNITS: Comlink /data → unitsList"
-    );
-
-    console.log(
-      "PORTRAITS: tools4swgoh/swgoh-icons"
-    );
-
-    console.log(
-      "========================================"
+      `Comlink: ${COMLINK_URL}`
     );
   }
 );
