@@ -145,11 +145,15 @@ function renderProgress(unit){
     const gear=Number(unit.gearTier)||0;
     const relic=Number(unit.relicTier)||0;
 
-    if(relic>0) {
+    if(relic>0&&gear>0){
+        return `G${gear} · R${relic}`;
+    }
+
+    if(relic>0){
         return `R${relic}`;
     }
 
-    if(gear>0) {
+    if(gear>0){
         return `G${gear}`;
     }
 
