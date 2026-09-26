@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
-
   <meta charset="UTF-8">
 
   <meta
@@ -12,511 +10,508 @@
 
   <title>SWGOH Arena Tracker</title>
 
-
   <style>
-
     * {
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
     }
 
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background: #0b0d12;
+      color: #f4f4f5;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Arial,
+        sans-serif;
+    }
 
     body {
-
-      margin: 0;
-      padding: 24px 16px;
-
-      background: #111318;
-      color: #ffffff;
-
-      font-family: Arial, sans-serif;
-
+      padding: 18px;
     }
 
+    button,
+    input {
+      font: inherit;
+    }
 
-    .container {
-
-      max-width: 600px;
+    .app {
+      width: 100%;
+      max-width: 900px;
       margin: 0 auto;
-
     }
 
+    /* =========================
+       HEADER
+    ========================= */
 
-    h1 {
-
-      margin: 0 0 8px;
-      font-size: 26px;
-
+    .header {
+      margin-bottom: 18px;
     }
 
+    .title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
 
     .subtitle {
-
-      color: #9da3ad;
-      margin-bottom: 24px;
-
+      margin-top: 5px;
+      color: #858b98;
+      font-size: 14px;
     }
 
+    /* =========================
+       SEARCH
+    ========================= */
+
+    .search-card {
+      background: #14171e;
+      border: 1px solid #252a34;
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 9px;
+    }
 
     input {
+      min-width: 0;
+      flex: 1;
 
-      width: 100%;
-
-      padding: 14px;
-
-      border: 1px solid #343942;
-      border-radius: 10px;
-
-      background: #1b1e24;
+      background: #0e1015;
       color: white;
 
-      font-size: 16px;
+      border: 1px solid #2b303a;
+      border-radius: 11px;
 
+      padding: 12px 13px;
       outline: none;
-
     }
-
 
     input:focus {
-
-      border-color: #666d78;
-
+      border-color: #4c5565;
     }
-
-
-    .buttons {
-
-      display: grid;
-
-      grid-template-columns:
-        1fr 1fr;
-
-      gap: 10px;
-
-      margin-top: 12px;
-
-    }
-
 
     button {
-
-      padding: 13px 10px;
-
       border: 0;
-      border-radius: 10px;
+      border-radius: 11px;
+      padding: 0 16px;
 
-      background: #2a2f38;
-      color: white;
+      background: #e8e9eb;
+      color: #111318;
 
-      font-size: 15px;
-      font-weight: 600;
-
+      font-weight: 700;
       cursor: pointer;
-
     }
-
 
     button:active {
-
       transform: scale(0.98);
-
     }
 
+    .buttons {
+      display: flex;
+      gap: 9px;
+      margin-top: 10px;
+    }
+
+    .buttons button {
+      flex: 1;
+      min-height: 43px;
+    }
+
+    .secondary {
+      background: #252a34;
+      color: #f3f4f6;
+    }
+
+    /* =========================
+       STATUS
+    ========================= */
 
     .status {
+      display: none;
+      padding: 11px 13px;
+      margin-bottom: 16px;
 
-      min-height: 22px;
+      background: #14171e;
+      border: 1px solid #252a34;
+      border-radius: 12px;
 
-      margin-top: 16px;
-
-      color: #9da3ad;
-
+      color: #aeb4c0;
       font-size: 14px;
-
     }
 
+    .status.show {
+      display: block;
+    }
 
-    .arena-card {
+    .status.error {
+      color: #ff7777;
+    }
 
+    /* =========================
+       PLAYER CARD
+    ========================= */
+
+    .player-card {
       display: none;
 
-      margin-top: 20px;
+      background: #14171e;
+      border: 1px solid #252a34;
+      border-radius: 16px;
 
-      padding: 18px;
-
-      border-radius: 14px;
-
-      background: #1b1e24;
-
-      border: 1px solid #30343c;
-
+      padding: 16px;
+      margin-bottom: 16px;
     }
 
+    .player-card.show {
+      display: block;
+    }
 
-    .player-header {
-
+    .player-top {
       display: flex;
+      justify-content: space-between;
+      gap: 15px;
+    }
 
-      justify-content:
-        space-between;
+    .player-name {
+      font-size: 21px;
+      font-weight: 800;
+    }
+
+    .player-meta {
+      margin-top: 5px;
+      color: #858b98;
+      font-size: 13px;
+    }
+
+    .rank-box {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .rank-label {
+      color: #858b98;
+      font-size: 12px;
+    }
+
+    .rank {
+      margin-top: 2px;
+      font-size: 27px;
+      font-weight: 800;
+    }
+
+    /* =========================
+       ARENA
+    ========================= */
+
+    .section-title {
+      margin: 20px 0 10px;
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .arena-card {
+      background: #14171e;
+      border: 1px solid #252a34;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .arena-row {
+      display: grid;
+      grid-template-columns: 55px 1fr;
+      gap: 12px;
 
       align-items: center;
 
-      gap: 12px;
+      min-height: 84px;
+      padding: 10px 13px;
 
-      margin-bottom: 18px;
-
+      border-bottom: 1px solid #252a34;
     }
 
+    .arena-row:last-child {
+      border-bottom: 0;
+    }
 
-    .player-name {
+    .arena-row.me {
+      background: #191d26;
+    }
 
-      font-size: 21px;
+    .position {
+      font-size: 18px;
+      font-weight: 800;
+      color: #aeb4c0;
+      text-align: center;
+    }
+
+    .arena-row.me .position {
+      color: white;
+    }
+
+    .opponent {
+      min-width: 0;
+    }
+
+    .opponent-name {
+      font-size: 15px;
       font-weight: 700;
 
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-
-    .rank {
-
-      font-size: 24px;
-      font-weight: 700;
-
-    }
-
-
-    .rank-label {
-
-      color: #8f96a1;
-
+    .opponent-code {
+      margin-top: 3px;
+      color: #727887;
       font-size: 12px;
-
-      text-align: right;
-
     }
 
+    /* =========================
+       SQUAD
+    ========================= */
 
-    .squad-title {
-
-      margin-bottom: 14px;
-
-      color: #9da3ad;
-
-      font-size: 13px;
-
+    .squad-card {
+      background: #14171e;
+      border: 1px solid #252a34;
+      border-radius: 16px;
+      padding: 14px;
     }
-
 
     .squad {
-
       display: grid;
-
       grid-template-columns:
-        repeat(5, 1fr);
+        repeat(5, minmax(0, 1fr));
 
-      gap: 10px;
-
+      gap: 8px;
     }
 
-
-    .character {
-
+    .unit {
       min-width: 0;
       text-align: center;
-
     }
 
-
-    .portrait {
-
+    .portrait-wrap {
       width: 100%;
+      aspect-ratio: 1;
 
-      aspect-ratio: 1 / 1;
-
-      display: block;
-
-      object-fit: cover;
-
-      border-radius: 50%;
-
-      background: #292d35;
-
-      border: 2px solid #4a505b;
-
-    }
-
-
-    .portrait.loading {
-
-      opacity: 0.35;
-
-      animation:
-        pulse 1.2s infinite;
-
-    }
-
-
-    .portrait.error {
-
-      opacity: 0.25;
-
-    }
-
-
-    @keyframes pulse {
-
-      0% {
-        opacity: 0.3;
-      }
-
-      50% {
-        opacity: 0.8;
-      }
-
-      100% {
-        opacity: 0.3;
-      }
-
-    }
-
-
-    .character-name {
-
-      margin-top: 6px;
-
-      color: #c8ccd3;
-
-      font-size: 10px;
-
-      line-height: 1.15;
-
-      word-break: break-word;
-
-    }
-
-
-    /* =====================================================
-       DEBUG
-    ===================================================== */
-
-    .debug-button {
-
-      width: 100%;
-
-      margin-top: 20px;
-
-      padding: 10px;
-
-      background: #191c22;
-
-      border: 1px solid #30343c;
-
-      color: #8f96a1;
-
-      font-size: 12px;
-
-      text-align: left;
-
-    }
-
-
-    .debug-panel {
-
-      display: none;
-
-      margin-top: 8px;
-
-      border-radius: 10px;
-
-      background: #090b0e;
-
-      border: 1px solid #292d34;
+      background: #0b0d12;
+      border: 1px solid #303641;
+      border-radius: 12px;
 
       overflow: hidden;
 
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-
-    .debug-header {
-
-      padding: 10px 12px;
-
-      color: #8f96a1;
-
-      font-size: 11px;
-
-      border-bottom:
-        1px solid #292d34;
-
-      font-weight: 700;
-
+    .portrait {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
+    .portrait-placeholder {
+      width: 100%;
+      height: 100%;
 
-    .debug-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
-      max-height: 320px;
+      color: #4c5260;
+      font-size: 24px;
+    }
 
-      overflow-y: auto;
-
-      padding: 10px 12px;
-
-      font-family:
-        monospace;
+    .unit-name {
+      margin-top: 5px;
 
       font-size: 10px;
+      line-height: 1.15;
 
-      line-height: 1.55;
+      color: #aeb4c0;
 
-      color: #aeb4be;
-
-      white-space: pre-wrap;
-
-      word-break: break-word;
-
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
+    /* =========================
+       DATACRON
+    ========================= */
 
-    .debug-entry {
+    .datacron {
+      margin-top: 14px;
 
-      padding-bottom: 3px;
+      padding: 12px;
 
+      background: #0e1015;
+      border: 1px solid #252a34;
+      border-radius: 11px;
     }
 
-
-    .debug-success {
-
-      color: #8bcf9a;
-
+    .datacron-title {
+      font-size: 13px;
+      font-weight: 800;
     }
 
-
-    .debug-error {
-
-      color: #e88787;
-
+    .datacron-text {
+      margin-top: 4px;
+      color: #858b98;
+      font-size: 12px;
+      line-height: 1.45;
     }
 
+    /* =========================
+       DEBUG
+    ========================= */
 
-    .debug-title {
-
-      margin-top: 10px;
-
-      margin-bottom: 4px;
-
-      color: #ffffff;
-
-      font-weight: 700;
-
+    details {
+      margin-top: 18px;
     }
 
-
-    /* =====================================================
-       JSON
-    ===================================================== */
-
-    .json-section {
-
-      margin-top: 20px;
-
+    summary {
+      cursor: pointer;
+      color: #777e8d;
+      font-size: 13px;
     }
-
-
-    .json-section button {
-
-      width: 100%;
-
-      margin-bottom: 10px;
-
-    }
-
 
     pre {
+      margin-top: 10px;
 
-      display: none;
+      max-height: 400px;
+      overflow: auto;
 
-      overflow-x: auto;
-
-      padding: 14px;
-
+      background: #07080b;
+      border: 1px solid #20242c;
       border-radius: 10px;
 
-      background: #0b0d10;
+      padding: 12px;
 
-      color: #cbd1da;
-
+      color: #aeb4c0;
       font-size: 11px;
 
-      line-height: 1.4;
-
       white-space: pre-wrap;
-
       word-break: break-word;
-
     }
 
+    /* =========================
+       MOBILE
+    ========================= */
 
-    @media (max-width: 420px) {
+    @media (max-width: 520px) {
+      body {
+        padding: 12px;
+      }
+
+      .title {
+        font-size: 24px;
+      }
+
+      .input-row {
+        flex-direction: column;
+      }
+
+      .input-row button {
+        min-height: 43px;
+      }
+
+      .player-top {
+        align-items: flex-start;
+      }
+
+      .rank {
+        font-size: 24px;
+      }
+
+      .arena-row {
+        grid-template-columns: 45px 1fr;
+      }
 
       .squad {
-        gap: 6px;
+        gap: 5px;
       }
 
-
-      .character-name {
+      .unit-name {
         font-size: 9px;
       }
-
-
-      .buttons {
-        grid-template-columns: 1fr;
-      }
-
     }
-
   </style>
-
 </head>
-
 
 <body>
 
+<div class="app">
 
-<div class="container">
+  <div class="header">
+    <div class="title">
+      SWGOH Arena Tracker
+    </div>
 
-
-  <h1>
-    SWGOH Arena Tracker
-  </h1>
-
-
-  <div class="subtitle">
-    Тест получения состава арены
+    <div class="subtitle">
+      Squad Arena · Live data
+    </div>
   </div>
 
 
-  <input
-    id="allyCode"
-    type="text"
-    inputmode="numeric"
-    maxlength="9"
-    placeholder="Ally Code (9 цифр)"
-  >
+  <!-- SEARCH -->
 
+  <div class="search-card">
 
-  <div class="buttons">
+    <div class="input-row">
 
-    <button onclick="getArena()">
-      Получить Arena
-    </button>
+      <input
+        id="allyCode"
+        type="text"
+        inputmode="numeric"
+        placeholder="Ally Code"
+        autocomplete="off"
+      >
 
+      <button
+        id="arenaButton"
+        onclick="loadArena()"
+      >
+        Получить Arena
+      </button>
 
-    <button onclick="getPlayer()">
-      Получить профиль
-    </button>
+    </div>
+
+    <div class="buttons">
+
+      <button
+        class="secondary"
+        onclick="loadPlayer()"
+      >
+        Получить профиль
+      </button>
+
+      <button
+        class="secondary"
+        onclick="testPortraits()"
+      >
+        Test portraits
+      </button>
+
+    </div>
 
   </div>
 
+
+  <!-- STATUS -->
 
   <div
     id="status"
@@ -524,12 +519,14 @@
   ></div>
 
 
+  <!-- PLAYER -->
+
   <div
-    id="arenaCard"
-    class="arena-card"
+    id="playerCard"
+    class="player-card"
   >
 
-    <div class="player-header">
+    <div class="player-top">
 
       <div>
 
@@ -540,297 +537,235 @@
           —
         </div>
 
-
         <div
-          id="playerLevel"
-          class="subtitle"
+          id="playerMeta"
+          class="player-meta"
         >
           —
         </div>
 
       </div>
 
+      <div class="rank-box">
 
-      <div>
+        <div class="rank-label">
+          Squad Arena
+        </div>
 
         <div
-          id="rank"
+          id="playerRank"
           class="rank"
         >
           —
         </div>
 
-
-        <div class="rank-label">
-          ARENA RANK
-        </div>
-
       </div>
 
     </div>
 
+  </div>
 
-    <div class="squad-title">
-      Squad Arena
+
+  <!-- ARENA -->
+
+  <div
+    id="arenaSection"
+    style="display:none"
+  >
+
+    <div class="section-title">
+      Arena
     </div>
 
-
     <div
-      id="squad"
-      class="squad"
+      id="arena"
+      class="arena-card"
     ></div>
+
+  </div>
+
+
+  <!-- SQUAD -->
+
+  <div
+    id="squadSection"
+    style="display:none"
+  >
+
+    <div class="section-title">
+      Squad
+    </div>
+
+    <div class="squad-card">
+
+      <div
+        id="squad"
+        class="squad"
+      ></div>
+
+      <div
+        id="datacron"
+        class="datacron"
+        style="display:none"
+      >
+
+        <div class="datacron-title">
+          Datacron
+        </div>
+
+        <div
+          id="datacronText"
+          class="datacron-text"
+        ></div>
+
+      </div>
+
+    </div>
 
   </div>
 
 
   <!-- DEBUG -->
 
-  <button
-    class="debug-button"
-    onclick="toggleDebug()"
-  >
-    DEBUG ▾
-  </button>
+  <details>
 
+    <summary>
+      Debug Console
+    </summary>
 
-  <div
-    id="debugPanel"
-    class="debug-panel"
-  >
+    <pre id="debug"></pre>
 
-    <div class="debug-header">
-      SWGOH ARENA TRACKER — DEBUG CONSOLE
-    </div>
-
-
-    <div
-      id="debugContent"
-      class="debug-content"
-    >
-      Ожидание...
-    </div>
-
-  </div>
-
-
-  <!-- JSON -->
-
-  <div class="json-section">
-
-
-    <button
-      id="copyButton"
-      onclick="copyJSON()"
-      style="display:none;"
-    >
-      📋 Копировать JSON
-    </button>
-
-
-    <pre id="output"></pre>
-
-  </div>
-
+  </details>
 
 </div>
 
 
 <script>
 
+  /* =====================================================
+     CONFIG
+  ===================================================== */
 
-const PROXY_URL =
-  "https://arena-tracker-proxy.onrender.com";
-
-
-const CHARACTER_NAMES = {
-
-  GLLEIA:
-    "Leia Organa",
-
-  CAPTAINDROGAN:
-    "Captain Drogan",
-
-  R2D2_LEGENDARY:
-    "R2-D2",
-
-  CAPTAINREX:
-    "Captain Rex",
-
-  C3POCHEWBACCA:
-    "C-3PO & Chewbacca"
-
-};
+  const PROXY =
+    "https://arena-tracker-proxy.onrender.com";
 
 
-let debugLines = [];
+  /* =====================================================
+     ELEMENTS
+  ===================================================== */
+
+  const allyCodeInput =
+    document.getElementById("allyCode");
+
+  const statusEl =
+    document.getElementById("status");
+
+  const debugEl =
+    document.getElementById("debug");
+
+  const playerCard =
+    document.getElementById("playerCard");
+
+  const playerName =
+    document.getElementById("playerName");
+
+  const playerMeta =
+    document.getElementById("playerMeta");
+
+  const playerRank =
+    document.getElementById("playerRank");
+
+  const arenaSection =
+    document.getElementById("arenaSection");
+
+  const arenaEl =
+    document.getElementById("arena");
+
+  const squadSection =
+    document.getElementById("squadSection");
+
+  const squadEl =
+    document.getElementById("squad");
+
+  const datacronEl =
+    document.getElementById("datacron");
+
+  const datacronText =
+    document.getElementById("datacronText");
 
 
-/* =====================================================
-   DEBUG
-===================================================== */
+  /* =====================================================
+     HELPERS
+  ===================================================== */
 
-function clearDebug() {
-
-  debugLines = [];
-
-  renderDebug();
-
-}
-
-
-function addDebug(
-  text,
-  type = ""
-) {
-
-  debugLines.push({
+  function setStatus(
     text,
-    type
-  });
+    error = false
+  ) {
 
+    statusEl.textContent = text;
 
-  renderDebug();
+    statusEl.classList.add("show");
 
-}
-
-
-function renderDebug() {
-
-  const container =
-    document.getElementById(
-      "debugContent"
+    statusEl.classList.toggle(
+      "error",
+      error
     );
+  }
 
 
-  if (!debugLines.length) {
+  function clearStatus() {
 
-    container.textContent =
-      "Ожидание...";
+    statusEl.textContent = "";
 
-    return;
+    statusEl.classList.remove(
+      "show",
+      "error"
+    );
 
   }
 
 
-  container.innerHTML = "";
+  function debug(data) {
 
+    try {
 
-  debugLines.forEach(
-    entry => {
+      debugEl.textContent =
+        typeof data === "string"
+          ? data
+          : JSON.stringify(
+              data,
+              null,
+              2
+            );
 
-      const line =
-        document.createElement(
-          "div"
-        );
+    } catch {
 
-
-      line.className =
-        "debug-entry";
-
-
-      if (
-        entry.type
-      ) {
-
-        line.classList.add(
-          `debug-${entry.type}`
-        );
-
-      }
-
-
-      line.textContent =
-        entry.text;
-
-
-      container.appendChild(
-        line
-      );
+      debugEl.textContent =
+        String(data);
 
     }
-  );
 
-
-  container.scrollTop =
-    container.scrollHeight;
-
-}
-
-
-function toggleDebug() {
-
-  const panel =
-    document.getElementById(
-      "debugPanel"
-    );
-
-
-  panel.style.display =
-    panel.style.display === "block"
-      ? "none"
-      : "block";
-
-}
-
-
-/* =====================================================
-   BASIC
-===================================================== */
-
-function getBaseUnitId(
-  unitDefId
-) {
-
-  if (!unitDefId) {
-    return "";
   }
 
 
-  return unitDefId
-    .split(":")[0]
-    .toUpperCase();
+  function getAllyCode() {
 
-}
+    return allyCodeInput.value
+      .replace(/\D/g, "");
 
-
-function getCharacterName(
-  unitDefId
-) {
-
-  const id =
-    getBaseUnitId(
-      unitDefId
-    );
+  }
 
 
-  return (
-    CHARACTER_NAMES[id] ||
-    id
-  );
-
-}
-
-
-/* =====================================================
-   IMAGE
-===================================================== */
-
-async function getCharacterImage(
-  unitDefId
-) {
-
-  addDebug(
-    `→ Ищем портрет: ${unitDefId}`
-  );
-
-
-  try {
+  async function post(
+    endpoint,
+    body
+  ) {
 
     const response =
       await fetch(
-        `${PROXY_URL}/characterImage`,
+        `${PROXY}${endpoint}`,
         {
-
           method: "POST",
 
           headers: {
@@ -839,683 +774,869 @@ async function getCharacterImage(
           },
 
           body:
-            JSON.stringify({
-              unitDefId
-            })
-
+            JSON.stringify(body)
         }
       );
 
+    const text =
+      await response.text();
 
-    const data =
-      await response.json();
+    let data;
 
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
 
-    if (
-      Array.isArray(
-        data.debug
-      )
-    ) {
+    if (!response.ok) {
 
-      data.debug.forEach(
-        line => {
-
-          let type = "";
-
-
-          if (
-            line.includes("✓")
-          ) {
-            type = "success";
-          }
-
-
-          if (
-            line.includes("❌") ||
-            line.includes("ERROR")
-          ) {
-            type = "error";
-          }
-
-
-          addDebug(
-            `  ${line}`,
-            type
-          );
-
-        }
+      throw new Error(
+        typeof data === "object"
+          ? JSON.stringify(data)
+          : data
       );
 
     }
 
+    return data;
 
-    if (
-      data.image?.url
-    ) {
+  }
 
-      addDebug(
-        `✓ IMAGE FOUND`,
-        "success"
+
+  /* =====================================================
+     PLAYER ARENA
+  ===================================================== */
+
+  async function loadArena() {
+
+    const allyCode =
+      getAllyCode();
+
+    if (!allyCode) {
+
+      setStatus(
+        "Введите Ally Code",
+        true
       );
 
-
-      addDebug(
-        `  file: ${data.image.file}`
-      );
-
-
-      addDebug(
-        `  score: ${data.image.score}`
-      );
-
-
-      return data.image.url;
+      return;
 
     }
 
-
-    addDebug(
-      `❌ IMAGE NOT FOUND`,
-      "error"
+    setStatus(
+      "Получаю Arena..."
     );
 
+    try {
 
-    return null;
+      const data =
+        await post(
+          "/playerArena",
+          {
+            allyCode
+          }
+        );
 
+      debug(data);
 
-  } catch (error) {
+      renderArena(data);
 
-    addDebug(
-      `❌ Request error: ${error.message}`,
-      "error"
-    );
+      setStatus(
+        "Arena загружена"
+      );
 
+    } catch (error) {
 
-    return null;
+      console.error(error);
 
-  }
+      setStatus(
+        `Ошибка: ${error.message}`,
+        true
+      );
 
-}
-
-
-/* =====================================================
-   API
-===================================================== */
-
-async function requestData(
-  endpoint,
-  allyCode
-) {
-
-  addDebug(
-    `API → ${endpoint}`
-  );
-
-
-  const response =
-    await fetch(
-      `${PROXY_URL}${endpoint}`,
-      {
-
-        method: "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
-
-        body:
-          JSON.stringify({
-
-            payload: {
-              allyCode
-            }
-
-          })
-
-      }
-    );
-
-
-  const text =
-    await response.text();
-
-
-  let data;
-
-
-  try {
-
-    data =
-      JSON.parse(text);
-
-  } catch {
-
-    throw new Error(
-      "Сервер вернул не JSON"
-    );
+    }
 
   }
 
 
-  if (!response.ok) {
+  /* =====================================================
+     PLAYER
+  ===================================================== */
 
-    throw new Error(
-      data.error ||
-      data.message ||
-      `HTTP ${response.status}`
-    );
-
-  }
-
-
-  addDebug(
-    `API ← ${endpoint} ✓`,
-    "success"
-  );
-
-
-  return data;
-
-}
-
-
-/* =====================================================
-   ALLY CODE
-===================================================== */
-
-function getAllyCode() {
-
-  const value =
-    document
-      .getElementById(
-        "allyCode"
-      )
-      .value
-      .trim();
-
-
-  if (
-    !/^[1-9]{9}$/.test(
-      value
-    )
-  ) {
-
-    throw new Error(
-      "Введите Ally Code из 9 цифр."
-    );
-
-  }
-
-
-  return value;
-
-}
-
-
-/* =====================================================
-   STATUS
-===================================================== */
-
-function setStatus(
-  text
-) {
-
-  document
-    .getElementById(
-      "status"
-    )
-    .textContent =
-      text;
-
-}
-
-
-/* =====================================================
-   JSON
-===================================================== */
-
-function showJSON(
-  data
-) {
-
-  const output =
-    document.getElementById(
-      "output"
-    );
-
-
-  output.textContent =
-    JSON.stringify(
-      data,
-      null,
-      2
-    );
-
-
-  output.style.display =
-    "block";
-
-
-  document.getElementById(
-    "copyButton"
-  ).style.display =
-    "block";
-
-}
-
-
-/* =====================================================
-   ARENA
-===================================================== */
-
-async function getArena() {
-
-  clearDebug();
-
-  try {
+  async function loadPlayer() {
 
     const allyCode =
       getAllyCode();
 
+    if (!allyCode) {
 
-    addDebug(
-      "════════════════════"
-    );
-
-
-    addDebug(
-      "START ARENA REQUEST"
-    );
-
-
-    addDebug(
-      `Ally Code: ${allyCode}`
-    );
-
-
-    setStatus(
-      "Получаем данные Arena..."
-    );
-
-
-    const data =
-      await requestData(
-        "/playerArena",
-        allyCode
+      setStatus(
+        "Введите Ally Code",
+        true
       );
 
+      return;
 
-    showJSON(data);
-
-
-    await renderArena(data);
-
+    }
 
     setStatus(
-      "Готово."
+      "Получаю профиль..."
     );
 
+    try {
 
-    addDebug(
-      "════════════════════"
-    );
+      const data =
+        await post(
+          "/player",
+          {
+            allyCode
+          }
+        );
 
+      debug(data);
 
-    addDebug(
-      "DONE ✓",
-      "success"
-    );
-
-
-  } catch (error) {
-
-    console.error(error);
-
-
-    addDebug(
-      `❌ ERROR: ${error.message}`,
-      "error"
-    );
-
-
-    setStatus(
-      "Ошибка: " +
-      error.message
-    );
-
-  }
-
-}
-
-
-/* =====================================================
-   PLAYER
-===================================================== */
-
-async function getPlayer() {
-
-  clearDebug();
-
-
-  try {
-
-    const allyCode =
-      getAllyCode();
-
-
-    setStatus(
-      "Получаем полный профиль..."
-    );
-
-
-    const data =
-      await requestData(
-        "/player",
-        allyCode
+      renderPlayer(
+        data
       );
 
+      setStatus(
+        "Профиль загружен"
+      );
 
-    showJSON(data);
+    } catch (error) {
 
+      console.error(error);
 
-    setStatus(
-      "Профиль получен."
-    );
+      setStatus(
+        `Ошибка: ${error.message}`,
+        true
+      );
 
-
-  } catch (error) {
-
-    console.error(error);
-
-
-    addDebug(
-      `❌ ERROR: ${error.message}`,
-      "error"
-    );
-
-
-    setStatus(
-      "Ошибка: " +
-      error.message
-    );
-
-  }
-
-}
-
-
-/* =====================================================
-   RENDER ARENA
-===================================================== */
-
-async function renderArena(
-  data
-) {
-
-  const profile =
-    data.pvpProfile?.[0];
-
-
-  if (!profile) {
-
-    throw new Error(
-      "В ответе нет Squad Arena."
-    );
+    }
 
   }
 
 
-  document
-    .getElementById(
-      "arenaCard"
-    )
-    .style.display =
-      "block";
+  /* =====================================================
+     PLAYER RENDER
+  ===================================================== */
 
+  function renderPlayer(data) {
 
-  document
-    .getElementById(
-      "playerName"
-    )
-    .textContent =
-      data.name ||
-      "Unknown";
-
-
-  document
-    .getElementById(
-      "playerLevel"
-    )
-    .textContent =
-      `Level ${data.level ?? "?"}`;
-
-
-  document
-    .getElementById(
-      "rank"
-    )
-    .textContent =
-      "#" +
-      (
-        profile.rank ??
-        "?"
-      );
-
-
-  const squad =
-    document.getElementById(
-      "squad"
-    );
-
-
-  squad.innerHTML = "";
-
-
-  const cells =
-    profile.squad?.cell ||
-    [];
-
-
-  cells.sort(
-    (a, b) =>
-      (a.cellIndex ?? 0) -
-      (b.cellIndex ?? 0)
-  );
-
-
-  addDebug(
-    `Найдено юнитов: ${cells.length}`
-  );
-
-
-  for (
-    const cell
-    of cells
-  ) {
-
-    const unitId =
-      cell.unitDefId;
-
-
-    const character =
-      document.createElement(
-        "div"
-      );
-
-
-    character.className =
-      "character";
-
-
-    const image =
-      document.createElement(
-        "img"
-      );
-
-
-    image.className =
-      "portrait loading";
-
-
-    image.alt =
-      getCharacterName(
-        unitId
-      );
-
+    const player =
+      data?.player ||
+      data;
 
     const name =
-      document.createElement(
-        "div"
+      player?.name ||
+      player?.playerName ||
+      "Unknown Player";
+
+    const level =
+      player?.level ??
+      player?.playerLevel;
+
+    playerName.textContent =
+      name;
+
+    playerMeta.textContent =
+      level
+        ? `Level ${level}`
+        : "SWGOH Player";
+
+    playerCard.classList.add(
+      "show"
+    );
+
+  }
+
+
+  /* =====================================================
+     ARENA RENDER
+  ===================================================== */
+
+  function renderArena(data) {
+
+    const profiles =
+      data?.pvpProfile ||
+      [];
+
+    const squadArena =
+      profiles[0];
+
+    const rank =
+      squadArena?.rank;
+
+    const player =
+      data?.player ||
+      data;
+
+    const name =
+      player?.name ||
+      data?.name ||
+      "Unknown Player";
+
+    playerName.textContent =
+      name;
+
+    playerRank.textContent =
+      rank ??
+      "—";
+
+    playerMeta.textContent =
+      player?.level
+        ? `Level ${player.level}`
+        : "Squad Arena";
+
+    playerCard.classList.add(
+      "show"
+    );
+
+
+    /* -----------------------------------------------
+       Arena cells
+    ----------------------------------------------- */
+
+    const cells =
+      squadArena?.squad?.cell ||
+      [];
+
+    const sorted =
+      [...cells].sort(
+        (a, b) =>
+          Number(
+            a.cellIndex ?? 0
+          ) -
+          Number(
+            b.cellIndex ?? 0
+          )
       );
 
+    arenaEl.innerHTML = "";
 
-    name.className =
-      "character-name";
+    if (!sorted.length) {
 
-
-    name.textContent =
-      getCharacterName(
-        unitId
-      );
-
-
-    character.appendChild(
-      image
-    );
-
-
-    character.appendChild(
-      name
-    );
-
-
-    squad.appendChild(
-      character
-    );
-
-
-    const imageUrl =
-      await getCharacterImage(
-        unitId
-      );
-
-
-    image.classList.remove(
-      "loading"
-    );
-
-
-    if (imageUrl) {
-
-      image.src =
-        imageUrl;
-
-
-      image.onload =
-        () => {
-
-          addDebug(
-            `✓ Браузер загрузил ${getCharacterName(unitId)}`,
-            "success"
-          );
-
-        };
-
-
-      image.onerror =
-        () => {
-
-          image.classList.add(
-            "error"
-          );
-
-
-          addDebug(
-            `❌ Браузер НЕ смог загрузить ${imageUrl}`,
-            "error"
-          );
-
-        };
+      arenaEl.innerHTML =
+        `<div class="arena-row">
+          <div class="position">—</div>
+          <div class="opponent-name">
+            Нет данных Arena
+          </div>
+        </div>`;
 
     } else {
 
-      image.classList.add(
-        "error"
+      for (
+        const cell
+        of sorted
+      ) {
+
+        const row =
+          document.createElement(
+            "div"
+          );
+
+        row.className =
+          "arena-row";
+
+        const position =
+          cell.cellIndex ??
+          "—";
+
+        const playerName =
+          cell.player?.name ||
+          cell.name ||
+          "Opponent";
+
+        const allyCode =
+          cell.player?.allyCode ||
+          cell.allyCode ||
+          "";
+
+        row.innerHTML = `
+
+          <div class="position">
+            ${escapeHtml(
+              String(position)
+            )}
+          </div>
+
+          <div class="opponent">
+
+            <div class="opponent-name">
+              ${escapeHtml(
+                playerName
+              )}
+            </div>
+
+            <div class="opponent-code">
+              ${
+                allyCode
+                  ? `Ally Code ${escapeHtml(
+                      String(
+                        allyCode
+                      )
+                    )}`
+                  : ""
+              }
+            </div>
+
+          </div>
+
+        `;
+
+        arenaEl.appendChild(
+          row
+        );
+
+      }
+
+    }
+
+    arenaSection.style.display =
+      "block";
+
+
+    /* -----------------------------------------------
+       Own squad
+    ----------------------------------------------- */
+
+    const ownSquad =
+      squadArena?.squad?.cell ||
+      [];
+
+    renderSquad(
+      ownSquad
+    );
+
+  }
+
+
+  /* =====================================================
+     SQUAD RENDER
+  ===================================================== */
+
+  async function renderSquad(
+    cells
+  ) {
+
+    squadEl.innerHTML = "";
+
+    const units = [];
+
+    for (
+      const cell
+      of cells
+    ) {
+
+      const unit =
+        cell?.unitDefId ||
+        cell?.unit?.unitDefId;
+
+      if (unit) {
+        units.push(unit);
+      }
+
+    }
+
+    /*
+     * Usually squad data may be nested differently.
+     * Try every cell recursively if necessary.
+     */
+
+    if (!units.length) {
+
+      const found =
+        findUnitDefIds(
+          cells
+        );
+
+      units.push(
+        ...found
+      );
+
+    }
+
+    const uniqueUnits =
+      [...new Set(units)]
+        .slice(0, 5);
+
+    if (!uniqueUnits.length) {
+
+      squadSection.style.display =
+        "none";
+
+      return;
+
+    }
+
+    squadSection.style.display =
+      "block";
+
+
+    /*
+     * Create placeholders immediately,
+     * then load images asynchronously.
+     */
+
+    const elements = [];
+
+    for (
+      const unitDefId
+      of uniqueUnits
+    ) {
+
+      const wrapper =
+        document.createElement(
+          "div"
+        );
+
+      wrapper.className =
+        "unit";
+
+      wrapper.innerHTML = `
+
+        <div class="portrait-wrap">
+
+          <div class="portrait-placeholder">
+            …
+          </div>
+
+        </div>
+
+        <div class="unit-name">
+          ${escapeHtml(
+            cleanUnitName(
+              unitDefId
+            )
+          )}
+        </div>
+
+      `;
+
+      squadEl.appendChild(
+        wrapper
+      );
+
+      elements.push({
+        unitDefId,
+        wrapper
+      });
+
+    }
+
+
+    /*
+     * Load portraits in parallel.
+     */
+
+    await Promise.all(
+      elements.map(
+        async ({
+          unitDefId,
+          wrapper
+        }) => {
+
+          try {
+
+            const result =
+              await post(
+                "/characterImage",
+                {
+                  unitDefId
+                }
+              );
+
+            console.log(
+              "Portrait:",
+              unitDefId,
+              result
+            );
+
+            if (
+              result?.ok &&
+              result?.url
+            ) {
+
+              const image =
+                document.createElement(
+                  "img"
+                );
+
+              image.className =
+                "portrait";
+
+              image.alt =
+                result.name ||
+                unitDefId;
+
+              image.loading =
+                "lazy";
+
+              image.src =
+                result.url;
+
+              const portraitWrap =
+                wrapper.querySelector(
+                  ".portrait-wrap"
+                );
+
+              portraitWrap.innerHTML =
+                "";
+
+              portraitWrap.appendChild(
+                image
+              );
+
+              /*
+               * If the remote image itself
+               * fails, leave a placeholder.
+               */
+
+              image.onerror =
+                () => {
+
+                  portraitWrap.innerHTML =
+                    `<div class="portrait-placeholder">
+                      ?
+                    </div>`;
+
+                };
+
+              /*
+               * Use the proper character
+               * name returned by the proxy.
+               */
+
+              const nameEl =
+                wrapper.querySelector(
+                  ".unit-name"
+                );
+
+              if (
+                nameEl &&
+                result.name
+              ) {
+
+                nameEl.textContent =
+                  result.name;
+
+              }
+
+            }
+
+          } catch (error) {
+
+            console.error(
+              "Portrait error:",
+              unitDefId,
+              error
+            );
+
+          }
+
+        }
+      )
+    );
+
+    /*
+     * Datacron.
+     */
+
+    renderDatacron(
+      cells
+    );
+
+  }
+
+
+  /* =====================================================
+     FIND UNIT IDS
+  ===================================================== */
+
+  function findUnitDefIds(
+    value,
+    result = []
+  ) {
+
+    if (
+      value === null ||
+      value === undefined
+    ) {
+      return result;
+    }
+
+    if (
+      typeof value === "object"
+    ) {
+
+      if (
+        typeof value.unitDefId ===
+        "string"
+      ) {
+
+        result.push(
+          value.unitDefId
+        );
+
+      }
+
+      for (
+        const key
+        of Object.keys(value)
+      ) {
+
+        findUnitDefIds(
+          value[key],
+          result
+        );
+
+      }
+
+    }
+
+    return result;
+
+  }
+
+
+  /* =====================================================
+     DATACRON
+  ===================================================== */
+
+  function renderDatacron(
+    cells
+  ) {
+
+    const found =
+      findDatacron(
+        cells
+      );
+
+    if (!found) {
+
+      datacronEl.style.display =
+        "none";
+
+      return;
+
+    }
+
+    const id =
+      found.id ||
+      found.datacronId ||
+      "Unknown";
+
+    const setId =
+      found.setId ||
+      "—";
+
+    const tier =
+      found.highestTierApplied ??
+      "—";
+
+    datacronText.innerHTML = `
+
+      ID: ${escapeHtml(
+        String(id)
+      )}<br>
+
+      Set: ${escapeHtml(
+        String(setId)
+      )}<br>
+
+      Tier: ${escapeHtml(
+        String(tier)
+      )}
+
+    `;
+
+    datacronEl.style.display =
+      "block";
+
+  }
+
+
+  function findDatacron(
+    value
+  ) {
+
+    if (
+      !value ||
+      typeof value !==
+        "object"
+    ) {
+
+      return null;
+
+    }
+
+    if (
+      value.datacron &&
+      typeof value.datacron ===
+        "object"
+    ) {
+
+      return value.datacron;
+
+    }
+
+    if (
+      value.datacronId
+    ) {
+
+      return value;
+
+    }
+
+    for (
+      const key
+      of Object.keys(value)
+    ) {
+
+      const result =
+        findDatacron(
+          value[key]
+        );
+
+      if (result) {
+        return result;
+      }
+
+    }
+
+    return null;
+
+  }
+
+
+  /* =====================================================
+     PORTRAIT TEST
+  ===================================================== */
+
+  async function testPortraits() {
+
+    setStatus(
+      "Проверяю систему портретов..."
+    );
+
+    try {
+
+      const status =
+        await fetch(
+          `${PROXY}/portraitStatus`
+        );
+
+      const data =
+        await status.json();
+
+      debug(data);
+
+      setStatus(
+        `Портретов найдено: ${
+          data.portraits ?? "?"
+        }`
+      );
+
+    } catch (error) {
+
+      setStatus(
+        `Ошибка портретов: ${error.message}`,
+        true
       );
 
     }
 
   }
 
-}
 
+  /* =====================================================
+     UTILS
+  ===================================================== */
 
-/* =====================================================
-   COPY
-===================================================== */
+  function cleanUnitName(
+    unitDefId
+  ) {
 
-async function copyJSON() {
-
-  const text =
-    document
-      .getElementById(
-        "output"
+    return String(
+      unitDefId || ""
+    )
+      .replace(
+        /:SEVEN_STAR$/i,
+        ""
       )
-      .textContent;
-
-
-  try {
-
-    await navigator
-      .clipboard
-      .writeText(text);
-
-
-    setStatus(
-      "JSON скопирован."
-    );
-
-
-  } catch {
-
-    const textarea =
-      document.createElement(
-        "textarea"
+      .replace(
+        /:SIX_STAR$/i,
+        ""
+      )
+      .replace(
+        /:FIVE_STAR$/i,
+        ""
+      )
+      .replace(
+        /_LEGENDARY$/i,
+        ""
+      )
+      .replace(
+        /_/g,
+        " "
       );
-
-
-    textarea.value =
-      text;
-
-
-    document.body.appendChild(
-      textarea
-    );
-
-
-    textarea.select();
-
-
-    document.execCommand(
-      "copy"
-    );
-
-
-    textarea.remove();
-
-
-    setStatus(
-      "JSON скопирован."
-    );
 
   }
 
-}
+
+  function escapeHtml(
+    value
+  ) {
+
+    return String(
+      value ?? ""
+    )
+      .replace(
+        /&/g,
+        "&amp;"
+      )
+      .replace(
+        /</g,
+        "&lt;"
+      )
+      .replace(
+        />/g,
+        "&gt;"
+      )
+      .replace(
+        /"/g,
+        "&quot;"
+      )
+      .replace(
+        /'/g,
+        "&#039;"
+      );
+
+  }
+
+
+  /* =====================================================
+     ENTER KEY
+  ===================================================== */
+
+  allyCodeInput.addEventListener(
+    "keydown",
+    (event) => {
+
+      if (
+        event.key === "Enter"
+      ) {
+
+        loadArena();
+
+      }
+
+    }
+  );
 
 </script>
 
-
 </body>
-
 </html>
