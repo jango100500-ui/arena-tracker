@@ -2,30 +2,28 @@ import http from "node:http";
 import { URL } from "node:url";
 import Fuse from "fuse.js";
 
+// ============================================================
+// CONFIG
+// ============================================================
+
 const PORT = process.env.PORT || 10000;
 
-// Твой Comlink Render
 const COMLINK_URL =
   process.env.COMLINK_URL ||
   "https://arena-tracker-2uod.onrender.com";
 
-// GitHub raw с актуальными иконками
-const ICONS_RAW =
-  "https://raw.githubusercontent.com/tools4swgoh/swgoh-icons/main/";
+const GAMEDATA_URL =
+  "https://raw.githubusercontent.com/swgoh-utils/gamedata/main";
 
-// Репозиторий иконок.
-// Вместо GitHub API используем обычную HTML-страницу,
-// чтобы не упираться в API rate limit.
-const ICONS_REPO =
+const ICONS_RAW_URL =
+  "https://raw.githubusercontent.com/tools4swgoh/swgoh-icons/main";
+
+const ICONS_REPO_URL =
   "https://github.com/tools4swgoh/swgoh-icons/tree/main";
 
-// Официальные game data
-const GAMEDATA_RAW =
-  "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/";
-
-// ------------------------------------------------------------
-// CACHE
-// ------------------------------------------------------------
+// Cache
+const GAME_DATA_TTL = 60 * 60 * 1000;
+const PORTRAIT_TTL = 6 * 60 * 60 * 1000;
 
 let gameDataCache = null;
 let gameDataLoadedAt = 0;
@@ -33,126 +31,63 @@ let gameDataLoadedAt = 0;
 let portraitCache = null;
 let portraitLoadedAt = 0;
 
-const GAME_DATA_TTL = 60 * 60 * 1000;       // 1 час
-const PORTRAIT_TTL = 6 * 60 * 60 * 1000;    // 6 часов
 
-// ------------------------------------------------------------
+// ============================================================
 // HTTP HELPERS
-// ------------------------------------------------------------
-
-async function fetchJson(url, options = {}) {
-  const response = await fetch(url, {
-    headers: {
-      "User-Agent": "arena-tracker/1.0",
-      Accept: "application/json",
-      ...(options.headers || {})
-    },
-    ...options
-  });
-
-  const text = await response.text();
-
-  if (!response.ok) {
-    throw new Error(
-      `HTTP ${response.status} ${response.statusText}: ${text.slice(0, 500)}`
-    );
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new Error(`Ответ не является JSON: ${text.slice(0, 500)}`);
-  }
-}
+// ============================================================
 
 async function fetchText(url, options = {}) {
   const response = await fetch(url, {
+    ...options,
+
     headers: {
       "User-Agent": "arena-tracker/1.0",
       ...(options.headers || {})
-    },
-    ...options
+    }
   });
 
   const text = await response.text();
 
   if (!response.ok) {
     throw new Error(
-      `HTTP ${response.status} ${response.statusText}: ${text.slice(0, 500)}`
+      `HTTP ${response.status} ${response.statusText}: ${text.slice(0, 1000)}`
     );
   }
 
   return text;
 }
 
-// ------------------------------------------------------------
+
+async function fetchJson(url, options = {}) {
+  const text = await fetchText(url, options);
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(
+      `Ожидался JSON, но пришло:\n${text.slice(0, 1000)}`
+    );
+  }
+}
+
+
+// ============================================================
 // GAME DATA
-// ------------------------------------------------------------
+// ============================================================
+//
+// gamedata/units.json имеет структуру:
+//
+// {
+//   "version": "...",
+//   "data": [ ... ]
+// }
+//
+// Мы используем именно data.
+//
+// Это автоматический источник. Никаких ручных персонажей.
+// ============================================================
 
-function normalizeArray(value) {
-  if (Array.isArray(value)) return value;
-
-  if (!value || typeof value !== "object") {
-    return [];
-  }
-
-  // Некоторые игровые коллекции могут прийти объектом.
-  return Object.values(value);
-}
-
-function extractCollection(payload) {
-  if (!payload) return [];
-
-  if (Array.isArray(payload)) {
-    return payload;
-  }
-
-  if (Array.isArray(payload.data)) {
-    return payload.data;
-  }
-
-  if (payload.data && typeof payload.data === "object") {
-    return Object.values(payload.data);
-  }
-
-  return [];
-}
-
-async function loadUnitsFromGameData() {
-  // Сначала пытаемся использовать units.json из gamedata.
-  // Это самый простой и лёгкий источник актуальных baseId/nameKey.
-  const candidates = [
-    "units.json",
-    "unitsList.json"
-  ];
-
-  let lastError = null;
-
-  for (const file of candidates) {
-    try {
-      const data = await fetchJson(`${GAMEDATA_RAW}${file}`);
-
-      const units = extractCollection(data);
-
-      if (units.length > 0) {
-        return {
-          source: `${GAMEDATA_RAW}${file}`,
-          units
-        };
-      }
-    } catch (error) {
-      lastError = error;
-    }
-  }
-
-  throw new Error(
-    `Не удалось загрузить units из gamedata: ${
-      lastError?.message || "unknown error"
-    }`
-  );
-}
-
-async function getGameData() {
+async function loadGameData() {
   const now = Date.now();
 
   if (
@@ -162,116 +97,180 @@ async function getGameData() {
     return gameDataCache;
   }
 
-  const loaded = await loadUnitsFromGameData();
+  console.log("[GAMEDATA] loading units.json...");
 
-  const units = normalizeArray(loaded.units);
+  const json = await fetchJson(
+    `${GAMEDATA_URL}/units.json`
+  );
+
+  let units = [];
+
+  if (Array.isArray(json)) {
+    units = json;
+  } else if (Array.isArray(json.data)) {
+    units = json.data;
+  } else if (
+    json.data &&
+    typeof json.data === "object"
+  ) {
+    units = Object.values(json.data);
+  }
+
+  if (!units.length) {
+    throw new Error(
+      "units.json загрузился, но массив units пуст"
+    );
+  }
 
   const byBaseId = new Map();
-  const byDefinitionId = new Map();
+
+  const byId = new Map();
+
+  const byThumbnail = new Map();
 
   for (const unit of units) {
-    if (!unit || typeof unit !== "object") continue;
+    if (!unit || typeof unit !== "object") {
+      continue;
+    }
 
     const baseId =
       unit.baseId ||
-      unit.baseID ||
+      unit.baseID;
+
+    const id =
       unit.id ||
-      unit.unitId;
+      unit.definitionId;
+
+    const thumbnailName =
+      unit.thumbnailName;
 
     if (baseId) {
-      byBaseId.set(String(baseId).toUpperCase(), unit);
+      byBaseId.set(
+        String(baseId).toUpperCase(),
+        unit
+      );
     }
 
-    const definitionId =
-      unit.definitionId ||
-      unit.defId ||
-      unit.definitionID;
+    if (id) {
+      byId.set(
+        String(id).toUpperCase(),
+        unit
+      );
+    }
 
-    if (definitionId) {
-      byDefinitionId.set(String(definitionId).toUpperCase(), unit);
+    if (thumbnailName) {
+      byThumbnail.set(
+        String(thumbnailName).toUpperCase(),
+        unit
+      );
     }
   }
 
   gameDataCache = {
-    source: loaded.source,
+    version: json.version || null,
     units,
     byBaseId,
-    byDefinitionId
+    byId,
+    byThumbnail
   };
 
   gameDataLoadedAt = now;
 
   console.log(
-    `[GAME DATA] loaded ${units.length} units from ${loaded.source}`
+    `[GAMEDATA] loaded ${units.length} units`
+  );
+
+  console.log(
+    `[GAMEDATA] version: ${json.version || "unknown"}`
   );
 
   return gameDataCache;
 }
 
-// ------------------------------------------------------------
-// PORTRAIT INDEX
-// ------------------------------------------------------------
 
-function decodeGitHubPath(value) {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
-}
+// ============================================================
+// NORMALIZATION
+// ============================================================
 
-function cleanFileName(name) {
-  return decodeGitHubPath(name)
-    .replace(/^.*\//, "")
-    .replace(/\.png$/i, "")
-    .trim();
-}
-
-function normalizeName(name) {
-  return String(name || "")
+function normalizeText(value) {
+  return String(value || "")
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/&amp;/g, "&")
+    .replace(/%26/gi, "&")
+    .replace(/%22/gi, '"')
     .replace(/["'’]/g, "")
-    .replace(/[^a-z0-9а-яё]+/gi, " ")
+    .replace(/[._-]+/g, " ")
+    .replace(/[^a-z0-9а-яё&]+/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function makeSearchName(name) {
-  return normalizeName(name)
-    .replace(/\bunit\b/g, "")
-    .replace(/\bcharacter\b/g, "")
-    .replace(/\bportrait\b/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+
+// ============================================================
+// PORTRAIT INDEX
+// ============================================================
+//
+// Репозиторий содержит реальные PNG.
+//
+// Например:
+//
+// Captain_Rex
+// CT-7567 "Rex"
+// Threepio & Chewie
+//
+// Мы НЕ пишем эти имена вручную.
+//
+// Список берём из GitHub.
+// ============================================================
+
+function decodeGithubFilename(filename) {
+  try {
+    return decodeURIComponent(filename);
+  } catch {
+    return filename;
+  }
 }
 
-function isCharacterPortrait(filename) {
-  const clean = cleanFileName(filename);
 
-  return (
-    /^65px-Unit-Character-.*-portrait\.png$/i.test(clean + ".png")
+function getPortraitDisplayName(filename) {
+  let name = filename;
+
+  name = name.replace(
+    /^65px-Unit-Character-/i,
+    ""
   );
-}
 
-function portraitFileToName(filename) {
-  let name = cleanFileName(filename);
+  name = name.replace(
+    /-portrait\.png$/i,
+    ""
+  );
 
-  name = name
-    .replace(/^65px-Unit-Character-/i, "")
-    .replace(/-portrait$/i, "");
+  name = decodeGithubFilename(name);
 
-  // GitHub filename convention
   name = name.replace(/_/g, " ");
-
-  // Некоторые имена используют encoded punctuation.
-  name = name.replace(/%26/gi, "&");
-  name = name.replace(/%22/g, '"');
 
   return name;
 }
+
+
+function isCharacterPortrait(filename) {
+  return /^65px-Unit-Character-.+-portrait\.png$/i.test(
+    filename
+  );
+}
+
+
+function makePortraitUrl(filename) {
+  // encodeURI сохраняет / и кодирует пробелы,
+  // но не ломает всю строку целиком.
+  return (
+    `${ICONS_RAW_URL}/` +
+    encodeURI(filename)
+  );
+}
+
 
 async function loadPortraitIndex() {
   const now = Date.now();
@@ -283,52 +282,56 @@ async function loadPortraitIndex() {
     return portraitCache;
   }
 
-  console.log("[PORTRAITS] downloading portrait index...");
+  console.log("[PORTRAITS] downloading GitHub index...");
 
-  let html;
-
-  try {
-    html = await fetchText(ICONS_REPO);
-  } catch (error) {
-    console.error(
-      "[PORTRAITS] GitHub page failed:",
-      error.message
-    );
-
-    throw error;
-  }
+  const html = await fetchText(
+    ICONS_REPO_URL
+  );
 
   const files = new Set();
 
-  // GitHub HTML содержит ссылки на файлы.
-  // Ищем все character portrait PNG.
+  // Ищем PNG непосредственно в HTML GitHub.
+  //
+  // Не используем GitHub API:
+  // оно у Render уже отдавало 403.
   const regex =
     /65px-Unit-Character-[^"'<>]+?-portrait\.png/gi;
 
   for (const match of html.matchAll(regex)) {
-    const file = decodeGitHubPath(match[0]);
+    const filename =
+      decodeGithubFilename(match[0]);
 
-    if (isCharacterPortrait(file)) {
-      files.add(file);
+    if (
+      isCharacterPortrait(filename)
+    ) {
+      files.add(filename);
     }
   }
 
-  const portraits = [...files].map((file) => {
-    const name = portraitFileToName(file);
+  const portraits = [...files]
+    .map((filename) => {
+      const displayName =
+        getPortraitDisplayName(filename);
 
-    return {
-      file,
-      name,
-      normalized: makeSearchName(name),
-      url:
-        ICONS_RAW +
-        encodeURI(file)
-    };
-  });
+      return {
+        filename,
+        displayName,
+
+        normalizedName:
+          normalizeText(displayName),
+
+        url:
+          makePortraitUrl(filename)
+      };
+    })
+    .filter(
+      (portrait) =>
+        portrait.normalizedName.length > 0
+    );
 
   if (!portraits.length) {
     throw new Error(
-      "GitHub вернул страницу, но character portraits не найдены"
+      "GitHub index не содержит character portraits"
     );
   }
 
@@ -336,333 +339,534 @@ async function loadPortraitIndex() {
   portraitLoadedAt = now;
 
   console.log(
-    `[PORTRAITS] indexed ${portraits.length} character portraits`
+    `[PORTRAITS] indexed ${portraits.length} portraits`
   );
 
-  return portraitCache;
+  return portraits;
 }
 
-// ------------------------------------------------------------
-// UNIT → PORTRAIT
-// ------------------------------------------------------------
 
-function getBaseIdFromDefinitionId(definitionId) {
-  if (!definitionId) return "";
+// ============================================================
+// FIND UNIT
+// ============================================================
 
-  return String(definitionId)
+function getBaseId(definitionId) {
+  return String(definitionId || "")
     .split(":")[0]
+    .trim()
     .toUpperCase();
 }
 
-function getPossibleNames(unit) {
-  if (!unit) return [];
 
+function findUnit(gameData, definitionId) {
+  const cleanDefinitionId =
+    String(definitionId || "")
+      .trim()
+      .toUpperCase();
+
+  const baseId =
+    getBaseId(cleanDefinitionId);
+
+  // Самый точный вариант:
+  // например CAPTAINREX:SEVEN_STAR
+  let unit =
+    gameData.byId.get(
+      cleanDefinitionId
+    );
+
+  // Обычно units.json содержит id,
+  // но если нет — используем baseId.
+  if (!unit) {
+    unit =
+      gameData.byBaseId.get(
+        baseId
+      );
+  }
+
+  return unit || null;
+}
+
+
+// ============================================================
+// UNIT NAME CANDIDATES
+// ============================================================
+
+function getUnitNames(unit, baseId) {
   const names = [];
 
-  const fields = [
-    "name",
-    "nameKey",
-    "baseId",
-    "id",
-    "unitId",
-    "definitionId",
-    "thumbnailName"
-  ];
+  if (unit) {
+    // В units.json nameKey обычно уже
+    // человекочитаемое имя.
+    if (unit.nameKey) {
+      names.push(
+        String(unit.nameKey)
+      );
+    }
 
-  for (const field of fields) {
-    if (unit[field]) {
-      names.push(String(unit[field]));
+    if (unit.baseId) {
+      names.push(
+        String(unit.baseId)
+      );
+    }
+
+    if (unit.thumbnailName) {
+      names.push(
+        String(unit.thumbnailName)
+      );
+    }
+
+    if (unit.id) {
+      names.push(
+        String(unit.id)
+      );
     }
   }
 
-  // Иногда локализованное имя может находиться глубже.
-  if (unit.nameKey && typeof unit.nameKey === "object") {
-    names.push(...Object.values(unit.nameKey));
+  // baseId всегда оставляем как fallback.
+  if (baseId) {
+    names.push(baseId);
   }
 
-  return [...new Set(names.filter(Boolean))];
-}
-
-function scoreExactBaseId(baseId, portrait) {
-  const normalizedBase = makeSearchName(
-    String(baseId)
-      .replace(/_/g, " ")
-      .replace(/-/g, " ")
-  );
-
-  const normalizedPortrait = portrait.normalized;
-
-  if (!normalizedBase || !normalizedPortrait) {
-    return 0;
-  }
-
-  if (normalizedBase === normalizedPortrait) {
-    return 1000;
-  }
-
-  if (
-    normalizedPortrait.includes(normalizedBase) ||
-    normalizedBase.includes(normalizedPortrait)
-  ) {
-    return 500;
-  }
-
-  return 0;
-}
-
-function createFuseIndex(portraits) {
-  return new Fuse(portraits, {
-    keys: [
-      {
-        name: "normalized",
-        weight: 1
-      },
-      {
-        name: "name",
-        weight: 0.7
-      }
-    ],
-    threshold: 0.25,
-    distance: 100,
-    ignoreLocation: true,
-    includeScore: true,
-    minMatchCharLength: 3
-  });
-}
-
-async function findCharacterImage(unitDefId) {
-  const started = Date.now();
-
-  const definitionId = String(unitDefId || "").trim();
-
-  if (!definitionId) {
-    return {
-      image: null,
-      debug: {
-        error: "empty unitDefId"
-      }
-    };
-  }
-
-  const baseId = getBaseIdFromDefinitionId(definitionId);
-
-  const gameData = await getGameData();
-  const portraits = await loadPortraitIndex();
-
-  let unit =
-    gameData.byDefinitionId.get(
-      definitionId.toUpperCase()
-    ) ||
-    gameData.byBaseId.get(baseId);
-
-  // ----------------------------------------------------------
-  // Exact baseId / unit lookup
-  // ----------------------------------------------------------
-
-  let candidates = [];
-
-  if (unit) {
-    candidates = getPossibleNames(unit);
-  }
-
-  // Даже если game data не нашла запись,
-  // baseId всё равно полезен как дополнительный ключ.
-  candidates.push(baseId);
-
-  candidates = [
+  return [
     ...new Set(
-      candidates
+      names
         .filter(Boolean)
         .map(String)
     )
   ];
+}
+
+
+// ============================================================
+// EXACT PORTRAIT MATCHING
+// ============================================================
+
+function exactPortraitMatch(
+  portraits,
+  names
+) {
+  const normalizedNames =
+    names
+      .map(normalizeText)
+      .filter(Boolean);
 
   // ----------------------------------------------------------
-  // Exact matches
+  // 1. Полное совпадение имени
   // ----------------------------------------------------------
-
-  const exactMatches = [];
 
   for (const portrait of portraits) {
-    let score = 0;
+    if (
+      normalizedNames.includes(
+        portrait.normalizedName
+      )
+    ) {
+      return {
+        portrait,
+        method: "exact-name",
+        score: 1000
+      };
+    }
+  }
 
-    for (const candidate of candidates) {
-      const candidateNormalized =
-        makeSearchName(candidate);
+  // ----------------------------------------------------------
+  // 2. thumbnailName
+  //
+  // Например:
+  // tex.charui_captainrex
+  //
+  // → captain rex
+  // ----------------------------------------------------------
 
-      if (!candidateNormalized) continue;
+  for (const name of normalizedNames) {
+    const compact =
+      name
+        .replace(/^tex charui /, "")
+        .trim();
 
-      if (
-        candidateNormalized ===
-        portrait.normalized
-      ) {
-        score = Math.max(score, 1000);
-      }
-
-      score = Math.max(
-        score,
-        scoreExactBaseId(candidate, portrait)
-      );
+    if (!compact) {
+      continue;
     }
 
-    if (score > 0) {
-      exactMatches.push({
-        portrait,
-        score
+    for (const portrait of portraits) {
+      if (
+        portrait.normalizedName === compact
+      ) {
+        return {
+          portrait,
+          method: "exact-thumbnail",
+          score: 950
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+
+// ============================================================
+// FUZZY FALLBACK
+// ============================================================
+//
+// Это ТОЛЬКО fallback.
+//
+// Основной путь выше — exact.
+// Поэтому Rex / CT-7567 Rex больше не должны
+// случайно меняться местами.
+// ============================================================
+
+function fuzzyPortraitMatch(
+  portraits,
+  names
+) {
+  const fuse =
+    new Fuse(
+      portraits,
+      {
+        keys: [
+          {
+            name: "normalizedName",
+            weight: 1
+          },
+          {
+            name: "displayName",
+            weight: 0.5
+          }
+        ],
+
+        threshold: 0.20,
+
+        distance: 100,
+
+        ignoreLocation: true,
+
+        includeScore: true,
+
+        minMatchCharLength: 3
+      }
+    );
+
+  const candidates = [];
+
+  for (const name of names) {
+    const normalized =
+      normalizeText(name);
+
+    if (!normalized) {
+      continue;
+    }
+
+    const results =
+      fuse.search(normalized);
+
+    for (const result of results) {
+      candidates.push({
+        ...result,
+        query: name
       });
     }
   }
 
-  exactMatches.sort(
-    (a, b) => b.score - a.score
+  if (!candidates.length) {
+    return null;
+  }
+
+  candidates.sort(
+    (a, b) =>
+      (a.score ?? 1) -
+      (b.score ?? 1)
   );
 
-  if (exactMatches.length) {
-    const best = exactMatches[0];
+  return candidates[0];
+}
+
+
+// ============================================================
+// CHARACTER IMAGE
+// ============================================================
+
+async function findCharacterImage(
+  unitDefId
+) {
+  const started =
+    Date.now();
+
+  const definitionId =
+    String(unitDefId || "")
+      .trim();
+
+  if (!definitionId) {
+    return {
+      image: null,
+
+      debug: {
+        method: "error",
+        error: "unitDefId is empty"
+      }
+    };
+  }
+
+  const baseId =
+    getBaseId(
+      definitionId
+    );
+
+  const gameData =
+    await loadGameData();
+
+  const portraits =
+    await loadPortraitIndex();
+
+  const unit =
+    findUnit(
+      gameData,
+      definitionId
+    );
+
+  const names =
+    getUnitNames(
+      unit,
+      baseId
+    );
+
+  console.log(
+    `[PORTRAIT] ${definitionId}`
+  );
+
+  console.log(
+    `[PORTRAIT] baseId = ${baseId}`
+  );
+
+  console.log(
+    `[PORTRAIT] unit =`,
+    unit
+      ? {
+          id: unit.id,
+          baseId: unit.baseId,
+          nameKey: unit.nameKey,
+          thumbnailName:
+            unit.thumbnailName
+        }
+      : "NOT FOUND"
+  );
+
+  console.log(
+    `[PORTRAIT] candidates =`,
+    names
+  );
+
+  // ----------------------------------------------------------
+  // EXACT
+  // ----------------------------------------------------------
+
+  const exact =
+    exactPortraitMatch(
+      portraits,
+      names
+    );
+
+  if (exact) {
+    console.log(
+      `[PORTRAIT] EXACT ✓ ${exact.portrait.filename}`
+    );
 
     return {
-      image: best.portrait.url,
-      match: best.portrait.name,
+      image:
+        exact.portrait.url,
+
+      match:
+        exact.portrait.displayName,
+
       debug: {
-        method: "exact",
+        method:
+          exact.method,
+
+        score:
+          exact.score,
+
         definitionId,
+
         baseId,
-        unitFound: !!unit,
-        unit: unit || null,
-        candidates,
-        portrait: best.portrait.file,
-        score: best.score,
-        alternatives: exactMatches
-          .slice(1, 5)
-          .map((x) => ({
-            name: x.portrait.name,
-            score: x.score
-          })),
-        elapsedMs: Date.now() - started
+
+        unitFound:
+          !!unit,
+
+        unit: unit
+          ? {
+              id: unit.id || null,
+              baseId:
+                unit.baseId || null,
+              nameKey:
+                unit.nameKey || null,
+              thumbnailName:
+                unit.thumbnailName || null
+            }
+          : null,
+
+        candidates:
+          names,
+
+        portrait:
+          exact.portrait.filename,
+
+        elapsedMs:
+          Date.now() - started
       }
     };
   }
 
   // ----------------------------------------------------------
-  // Fuse fallback
+  // FUZZY FALLBACK
   // ----------------------------------------------------------
 
-  const fuse = createFuseIndex(portraits);
-
-  const fuseQueries = [
-    ...candidates,
-    baseId
-  ].filter(Boolean);
-
-  let fuseResults = [];
-
-  for (const query of fuseQueries) {
-    const result = fuse.search(
-      makeSearchName(query)
+  const fuzzy =
+    fuzzyPortraitMatch(
+      portraits,
+      names
     );
 
-    fuseResults.push(
-      ...result.map((item) => ({
-        ...item,
-        query
-      }))
+  if (fuzzy) {
+    console.log(
+      `[PORTRAIT] FUZZY ⚠ ${fuzzy.item.filename}`
     );
-  }
-
-  // Убираем дубли
-  const unique = new Map();
-
-  for (const result of fuseResults) {
-    const key = result.item.file;
-
-    if (
-      !unique.has(key) ||
-      (result.score ?? 1) <
-        (unique.get(key).score ?? 1)
-    ) {
-      unique.set(key, result);
-    }
-  }
-
-  fuseResults = [...unique.values()]
-    .sort(
-      (a, b) =>
-        (a.score ?? 1) -
-        (b.score ?? 1)
-    );
-
-  if (fuseResults.length) {
-    const best = fuseResults[0];
 
     return {
-      image: best.item.url,
-      match: best.item.name,
+      image:
+        fuzzy.item.url,
+
+      match:
+        fuzzy.item.displayName,
+
       debug: {
-        method: "fuzzy-fallback",
+        method:
+          "fuzzy-fallback",
+
+        score:
+          fuzzy.score,
+
+        query:
+          fuzzy.query,
+
         definitionId,
+
         baseId,
-        unitFound: !!unit,
-        unit: unit || null,
-        candidates,
-        portrait: best.item.file,
-        score: best.score,
-        query: best.query,
-        alternatives: fuseResults
-          .slice(1, 6)
-          .map((x) => ({
-            name: x.item.name,
-            score: x.score
-          })),
-        elapsedMs: Date.now() - started
+
+        unitFound:
+          !!unit,
+
+        unit: unit
+          ? {
+              id: unit.id || null,
+              baseId:
+                unit.baseId || null,
+              nameKey:
+                unit.nameKey || null,
+              thumbnailName:
+                unit.thumbnailName || null
+            }
+          : null,
+
+        candidates:
+          names,
+
+        portrait:
+          fuzzy.item.filename,
+
+        elapsedMs:
+          Date.now() - started
       }
     };
   }
 
   // ----------------------------------------------------------
-  // Nothing found
+  // NOT FOUND
   // ----------------------------------------------------------
+
+  console.log(
+    `[PORTRAIT] NOT FOUND ✗ ${definitionId}`
+  );
 
   return {
     image: null,
+
     match: null,
+
     debug: {
-      method: "not-found",
+      method:
+        "not-found",
+
       definitionId,
+
       baseId,
-      unitFound: !!unit,
-      unit: unit || null,
-      candidates,
-      portraitsAvailable: portraits.length,
-      elapsedMs: Date.now() - started
+
+      unitFound:
+        !!unit,
+
+      unit: unit
+        ? {
+            id: unit.id || null,
+            baseId:
+              unit.baseId || null,
+            nameKey:
+              unit.nameKey || null,
+            thumbnailName:
+              unit.thumbnailName || null
+          }
+        : null,
+
+      candidates:
+        names,
+
+      portraitsAvailable:
+        portraits.length,
+
+      elapsedMs:
+        Date.now() - started
     }
   };
 }
 
-// ------------------------------------------------------------
-// COMLINK PROXY
-// ------------------------------------------------------------
 
-async function proxyToComlink(path, body) {
-  const url = `${COMLINK_URL}${path}`;
+// ============================================================
+// COMLINK
+// ============================================================
+
+async function proxyToComlink(
+  path,
+  body
+) {
+  const url =
+    `${COMLINK_URL}${path}`;
 
   console.log(
     `[COMLINK] POST ${path}`
   );
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json"
-    },
-    body: JSON.stringify(body)
-  });
+  const response =
+    await fetch(
+      url,
+      {
+        method: "POST",
 
-  const text = await response.text();
+        headers: {
+          "Content-Type":
+            "application/json",
+
+          "Accept":
+            "application/json"
+        },
+
+        body:
+          JSON.stringify(body)
+      }
+    );
+
+  const text =
+    await response.text();
 
   if (!response.ok) {
     throw new Error(
-      `Comlink ${response.status}: ${text.slice(0, 1000)}`
+      `Comlink ${response.status}: ${text.slice(0, 2000)}`
     );
   }
 
@@ -670,306 +874,536 @@ async function proxyToComlink(path, body) {
     return JSON.parse(text);
   } catch {
     throw new Error(
-      `Comlink returned invalid JSON: ${text.slice(0, 1000)}`
+      `Comlink returned invalid JSON: ${text.slice(0, 2000)}`
     );
   }
 }
 
-// ------------------------------------------------------------
-// REQUEST BODY
-// ------------------------------------------------------------
 
-async function readBody(req) {
-  return await new Promise((resolve, reject) => {
-    let body = "";
+// ============================================================
+// COMLINK GAME DATA DEBUG
+// ============================================================
+//
+// Оставляем endpoint, чтобы можно было проверить,
+// что units.json реально загружается.
+// ============================================================
 
-    req.on("data", (chunk) => {
-      body += chunk;
+async function getGameDataStatus() {
+  const data =
+    await loadGameData();
 
-      // Защита от случайно огромного POST.
-      if (body.length > 2_000_000) {
-        req.destroy();
-        reject(
-          new Error("Request body too large")
-        );
-      }
-    });
+  return {
+    ok: true,
 
-    req.on("end", () => {
-      if (!body) {
-        resolve({});
-        return;
-      }
+    version:
+      data.version,
 
-      try {
-        resolve(JSON.parse(body));
-      } catch {
-        reject(
-          new Error("Invalid JSON body")
-        );
-      }
-    });
+    units:
+      data.units.length,
 
-    req.on("error", reject);
-  });
+    baseIds:
+      data.byBaseId.size,
+
+    ids:
+      data.byId.size,
+
+    thumbnails:
+      data.byThumbnail.size,
+
+    cacheAge:
+      Date.now() -
+      gameDataLoadedAt
+  };
 }
 
-// ------------------------------------------------------------
-// JSON RESPONSE
-// ------------------------------------------------------------
 
-function sendJson(res, status, data) {
+async function getPortraitStatus() {
+  const portraits =
+    await loadPortraitIndex();
+
+  return {
+    ok: true,
+
+    portraits:
+      portraits.length,
+
+    cacheAge:
+      Date.now() -
+      portraitLoadedAt
+  };
+}
+
+
+// ============================================================
+// REQUEST BODY
+// ============================================================
+
+function readBody(req) {
+  return new Promise(
+    (resolve, reject) => {
+      let body = "";
+
+      req.on(
+        "data",
+        (chunk) => {
+          body += chunk;
+
+          if (
+            body.length >
+            2_000_000
+          ) {
+            reject(
+              new Error(
+                "Request body too large"
+              )
+            );
+
+            req.destroy();
+          }
+        }
+      );
+
+      req.on(
+        "end",
+        () => {
+          if (!body) {
+            resolve({});
+            return;
+          }
+
+          try {
+            resolve(
+              JSON.parse(body)
+            );
+          } catch {
+            reject(
+              new Error(
+                "Invalid JSON body"
+              )
+            );
+          }
+        }
+      );
+
+      req.on(
+        "error",
+        reject
+      );
+    }
+  );
+}
+
+
+// ============================================================
+// RESPONSE
+// ============================================================
+
+function sendJson(
+  res,
+  status,
+  data
+) {
   const payload =
     JSON.stringify(data);
 
-  res.writeHead(status, {
-    "Content-Type":
-      "application/json; charset=utf-8",
+  res.writeHead(
+    status,
+    {
+      "Content-Type":
+        "application/json; charset=utf-8",
 
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods":
-      "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers":
-      "Content-Type",
+      "Access-Control-Allow-Origin":
+        "*",
 
-    "Cache-Control":
-      "no-store"
-  });
+      "Access-Control-Allow-Methods":
+        "GET, POST, OPTIONS",
+
+      "Access-Control-Allow-Headers":
+        "Content-Type",
+
+      "Cache-Control":
+        "no-store"
+    }
+  );
 
   res.end(payload);
 }
 
-function sendText(res, status, text) {
-  res.writeHead(status, {
-    "Content-Type":
-      "text/plain; charset=utf-8",
 
-    "Access-Control-Allow-Origin": "*"
-  });
+function sendText(
+  res,
+  status,
+  text
+) {
+  res.writeHead(
+    status,
+    {
+      "Content-Type":
+        "text/plain; charset=utf-8",
+
+      "Access-Control-Allow-Origin":
+        "*"
+    }
+  );
 
   res.end(text);
 }
 
-// ------------------------------------------------------------
+
+// ============================================================
 // SERVER
-// ------------------------------------------------------------
+// ============================================================
 
-const server = http.createServer(
-  async (req, res) => {
-    try {
-      if (req.method === "OPTIONS") {
-        res.writeHead(204, {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods":
-            "GET, POST, OPTIONS",
-          "Access-Control-Allow-Headers":
-            "Content-Type"
-        });
+const server =
+  http.createServer(
+    async (req, res) => {
+      try {
 
-        res.end();
-        return;
-      }
+        // ------------------------------------------------------
+        // CORS PREFLIGHT
+        // ------------------------------------------------------
 
-      const url =
-        new URL(
-          req.url,
-          `http://${req.headers.host}`
-        );
+        if (
+          req.method ===
+          "OPTIONS"
+        ) {
+          res.writeHead(
+            204,
+            {
+              "Access-Control-Allow-Origin":
+                "*",
 
-      // ------------------------------------------------------
-      // Health
-      // ------------------------------------------------------
+              "Access-Control-Allow-Methods":
+                "GET, POST, OPTIONS",
 
-      if (
-        url.pathname === "/health" &&
-        req.method === "GET"
-      ) {
-        sendJson(res, 200, {
-          ok: true,
-          service: "arena-tracker-proxy",
-          comlink: COMLINK_URL,
-          gameDataLoaded: !!gameDataCache,
-          portraitsLoaded: !!portraitCache
-        });
-
-        return;
-      }
-
-      // ------------------------------------------------------
-      // Debug game data
-      // ------------------------------------------------------
-
-      if (
-        url.pathname === "/gameDataStatus" &&
-        req.method === "GET"
-      ) {
-        const data =
-          await getGameData();
-
-        sendJson(res, 200, {
-          ok: true,
-          source: data.source,
-          units: data.units.length,
-          cacheAge:
-            Date.now() -
-            gameDataLoadedAt
-        });
-
-        return;
-      }
-
-      // ------------------------------------------------------
-      // Debug portraits
-      // ------------------------------------------------------
-
-      if (
-        url.pathname === "/portraitStatus" &&
-        req.method === "GET"
-      ) {
-        const portraits =
-          await loadPortraitIndex();
-
-        sendJson(res, 200, {
-          ok: true,
-          portraits: portraits.length,
-          cacheAge:
-            Date.now() -
-            portraitLoadedAt
-        });
-
-        return;
-      }
-
-      // ------------------------------------------------------
-      // Character image
-      // ------------------------------------------------------
-
-      if (
-        url.pathname === "/characterImage" &&
-        req.method === "POST"
-      ) {
-        const body =
-          await readBody(req);
-
-        const unitDefId =
-          body.unitDefId ||
-          body.definitionId ||
-          body.defId;
-
-        console.log(
-          `[PORTRAIT] ${unitDefId}`
-        );
-
-        try {
-          const result =
-            await findCharacterImage(
-              unitDefId
-            );
-
-          sendJson(res, 200, {
-            unitDefId,
-            ...result
-          });
-        } catch (error) {
-          console.error(
-            "[PORTRAIT ERROR]",
-            error
+              "Access-Control-Allow-Headers":
+                "Content-Type"
+            }
           );
 
-          sendJson(res, 500, {
-            unitDefId,
-            image: null,
-            error: error.message,
-            debug: {
-              stack: error.stack
-            }
-          });
+          res.end();
+
+          return;
         }
 
-        return;
-      }
 
-      // ------------------------------------------------------
-      // Arena
-      // ------------------------------------------------------
-
-      if (
-        url.pathname === "/playerArena" &&
-        req.method === "POST"
-      ) {
-        const body =
-          await readBody(req);
-
-        const data =
-          await proxyToComlink(
-            "/playerArena",
-            body
+        const url =
+          new URL(
+            req.url,
+            `http://${req.headers.host}`
           );
 
-        sendJson(res, 200, data);
-        return;
-      }
 
-      // ------------------------------------------------------
-      // Player
-      // ------------------------------------------------------
+        // ------------------------------------------------------
+        // ROOT
+        // ------------------------------------------------------
 
-      if (
-        url.pathname === "/player" &&
-        req.method === "POST"
-      ) {
-        const body =
-          await readBody(req);
-
-        const data =
-          await proxyToComlink(
-            "/player",
-            body
+        if (
+          url.pathname === "/" &&
+          req.method === "GET"
+        ) {
+          sendText(
+            res,
+            200,
+            "Arena Tracker Proxy OK"
           );
 
-        sendJson(res, 200, data);
-        return;
-      }
+          return;
+        }
 
-      // ------------------------------------------------------
-      // Root
-      // ------------------------------------------------------
 
-      if (
-        url.pathname === "/" &&
-        req.method === "GET"
-      ) {
-        sendText(
+        // ------------------------------------------------------
+        // HEALTH
+        // ------------------------------------------------------
+
+        if (
+          url.pathname === "/health" &&
+          req.method === "GET"
+        ) {
+          sendJson(
+            res,
+            200,
+            {
+              ok: true,
+
+              service:
+                "arena-tracker-proxy",
+
+              comlink:
+                COMLINK_URL,
+
+              gameDataLoaded:
+                !!gameDataCache,
+
+              portraitsLoaded:
+                !!portraitCache
+            }
+          );
+
+          return;
+        }
+
+
+        // ------------------------------------------------------
+        // GAME DATA STATUS
+        // ------------------------------------------------------
+
+        if (
+          url.pathname ===
+            "/gameDataStatus" &&
+          req.method === "GET"
+        ) {
+          try {
+            const status =
+              await getGameDataStatus();
+
+            sendJson(
+              res,
+              200,
+              status
+            );
+          } catch (error) {
+            sendJson(
+              res,
+              500,
+              {
+                ok: false,
+
+                error:
+                  error.message,
+
+                stack:
+                  error.stack
+              }
+            );
+          }
+
+          return;
+        }
+
+
+        // ------------------------------------------------------
+        // PORTRAIT STATUS
+        // ------------------------------------------------------
+
+        if (
+          url.pathname ===
+            "/portraitStatus" &&
+          req.method === "GET"
+        ) {
+          try {
+            const status =
+              await getPortraitStatus();
+
+            sendJson(
+              res,
+              200,
+              status
+            );
+          } catch (error) {
+            sendJson(
+              res,
+              500,
+              {
+                ok: false,
+
+                error:
+                  error.message,
+
+                stack:
+                  error.stack
+              }
+            );
+          }
+
+          return;
+        }
+
+
+        // ------------------------------------------------------
+        // CHARACTER IMAGE
+        // ------------------------------------------------------
+
+        if (
+          url.pathname ===
+            "/characterImage" &&
+          req.method === "POST"
+        ) {
+          const body =
+            await readBody(req);
+
+          const unitDefId =
+            body.unitDefId ||
+            body.definitionId ||
+            body.defId;
+
+          try {
+            const result =
+              await findCharacterImage(
+                unitDefId
+              );
+
+            sendJson(
+              res,
+              200,
+              {
+                unitDefId,
+                ...result
+              }
+            );
+          } catch (error) {
+            console.error(
+              "[PORTRAIT ERROR]",
+              error
+            );
+
+            sendJson(
+              res,
+              500,
+              {
+                unitDefId,
+
+                image: null,
+
+                error:
+                  error.message,
+
+                debug: {
+                  stack:
+                    error.stack
+                }
+              }
+            );
+          }
+
+          return;
+        }
+
+
+        // ------------------------------------------------------
+        // PLAYER ARENA
+        // ------------------------------------------------------
+
+        if (
+          url.pathname ===
+            "/playerArena" &&
+          req.method === "POST"
+        ) {
+          const body =
+            await readBody(req);
+
+          const data =
+            await proxyToComlink(
+              "/playerArena",
+              body
+            );
+
+          sendJson(
+            res,
+            200,
+            data
+          );
+
+          return;
+        }
+
+
+        // ------------------------------------------------------
+        // PLAYER
+        // ------------------------------------------------------
+
+        if (
+          url.pathname ===
+            "/player" &&
+          req.method === "POST"
+        ) {
+          const body =
+            await readBody(req);
+
+          const data =
+            await proxyToComlink(
+              "/player",
+              body
+            );
+
+          sendJson(
+            res,
+            200,
+            data
+          );
+
+          return;
+        }
+
+
+        // ------------------------------------------------------
+        // 404
+        // ------------------------------------------------------
+
+        sendJson(
           res,
-          200,
-          "Arena Tracker Proxy OK"
+          404,
+          {
+            error:
+              "Not found"
+          }
         );
 
-        return;
+      } catch (error) {
+        console.error(
+          "[SERVER ERROR]",
+          error
+        );
+
+        sendJson(
+          res,
+          500,
+          {
+            error:
+              error.message,
+
+            stack:
+              error.stack
+          }
+        );
       }
-
-      sendJson(res, 404, {
-        error: "Not found"
-      });
-    } catch (error) {
-      console.error(
-        "[SERVER ERROR]",
-        error
-      );
-
-      sendJson(res, 500, {
-        error: error.message
-      });
     }
+  );
+
+
+// ============================================================
+// START
+// ============================================================
+
+server.listen(
+  PORT,
+  () => {
+    console.log(
+      "========================================"
+    );
+
+    console.log(
+      "ARENA TRACKER PROXY"
+    );
+
+    console.log(
+      `Port: ${PORT}`
+    );
+
+    console.log(
+      `Comlink: ${COMLINK_URL}`
+    );
+
+    console.log(
+      "Game data: swgoh-utils/gamedata"
+    );
+
+    console.log(
+      "Portraits: tools4swgoh/swgoh-icons"
+    );
+
+    console.log(
+      "========================================"
+    );
   }
 );
-
-server.listen(PORT, () => {
-  console.log(
-    `Arena Tracker Proxy listening on ${PORT}`
-  );
-
-  console.log(
-    `Comlink: ${COMLINK_URL}`
-  );
-});
