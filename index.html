@@ -41,6 +41,11 @@
       font: inherit;
     }
 
+    button {
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
     .app {
       width: 100%;
       max-width: 900px;
@@ -96,6 +101,9 @@
 
       padding: 12px 13px;
       outline: none;
+
+      -webkit-user-select: text;
+      user-select: text;
     }
 
     input:focus {
@@ -112,6 +120,8 @@
 
       font-weight: 700;
       cursor: pointer;
+
+      min-height: 43px;
     }
 
     button:active {
@@ -126,7 +136,6 @@
 
     .buttons button {
       flex: 1;
-      min-height: 43px;
     }
 
     .secondary {
@@ -140,6 +149,7 @@
 
     .status {
       display: none;
+
       padding: 11px 13px;
       margin-bottom: 16px;
 
@@ -149,6 +159,8 @@
 
       color: #aeb4c0;
       font-size: 14px;
+
+      word-break: break-word;
     }
 
     .status.show {
@@ -157,6 +169,7 @@
 
     .status.error {
       color: #ff7777;
+      border-color: #512b2b;
     }
 
     /* =========================
@@ -212,7 +225,7 @@
     }
 
     /* =========================
-       ARENA
+       SECTIONS
     ========================= */
 
     .section-title {
@@ -220,6 +233,10 @@
       font-size: 17px;
       font-weight: 800;
     }
+
+    /* =========================
+       ARENA
+    ========================= */
 
     .arena-card {
       background: #14171e;
@@ -347,6 +364,7 @@
 
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     /* =========================
@@ -413,6 +431,7 @@
     ========================= */
 
     @media (max-width: 520px) {
+
       body {
         padding: 12px;
       }
@@ -423,10 +442,6 @@
 
       .input-row {
         flex-direction: column;
-      }
-
-      .input-row button {
-        min-height: 43px;
       }
 
       .player-top {
@@ -448,15 +463,20 @@
       .unit-name {
         font-size: 9px;
       }
+
     }
   </style>
 </head>
+
 
 <body>
 
 <div class="app">
 
+  <!-- HEADER -->
+
   <div class="header">
+
     <div class="title">
       SWGOH Arena Tracker
     </div>
@@ -464,6 +484,7 @@
     <div class="subtitle">
       Squad Arena · Live data
     </div>
+
   </div>
 
 
@@ -489,6 +510,7 @@
       </button>
 
     </div>
+
 
     <div class="buttons">
 
@@ -545,6 +567,7 @@
         </div>
 
       </div>
+
 
       <div class="rank-box">
 
@@ -603,6 +626,7 @@
         class="squad"
       ></div>
 
+
       <div
         id="datacron"
         class="datacron"
@@ -655,47 +679,73 @@
   ===================================================== */
 
   const allyCodeInput =
-    document.getElementById("allyCode");
+    document.getElementById(
+      "allyCode"
+    );
 
   const statusEl =
-    document.getElementById("status");
+    document.getElementById(
+      "status"
+    );
 
   const debugEl =
-    document.getElementById("debug");
+    document.getElementById(
+      "debug"
+    );
 
   const playerCard =
-    document.getElementById("playerCard");
+    document.getElementById(
+      "playerCard"
+    );
 
   const playerName =
-    document.getElementById("playerName");
+    document.getElementById(
+      "playerName"
+    );
 
   const playerMeta =
-    document.getElementById("playerMeta");
+    document.getElementById(
+      "playerMeta"
+    );
 
   const playerRank =
-    document.getElementById("playerRank");
+    document.getElementById(
+      "playerRank"
+    );
 
   const arenaSection =
-    document.getElementById("arenaSection");
+    document.getElementById(
+      "arenaSection"
+    );
 
   const arenaEl =
-    document.getElementById("arena");
+    document.getElementById(
+      "arena"
+    );
 
   const squadSection =
-    document.getElementById("squadSection");
+    document.getElementById(
+      "squadSection"
+    );
 
   const squadEl =
-    document.getElementById("squad");
+    document.getElementById(
+      "squad"
+    );
 
   const datacronEl =
-    document.getElementById("datacron");
+    document.getElementById(
+      "datacron"
+    );
 
   const datacronText =
-    document.getElementById("datacronText");
+    document.getElementById(
+      "datacronText"
+    );
 
 
   /* =====================================================
-     HELPERS
+     STATUS
   ===================================================== */
 
   function setStatus(
@@ -705,12 +755,15 @@
 
     statusEl.textContent = text;
 
-    statusEl.classList.add("show");
+    statusEl.classList.add(
+      "show"
+    );
 
     statusEl.classList.toggle(
       "error",
       error
     );
+
   }
 
 
@@ -725,6 +778,10 @@
 
   }
 
+
+  /* =====================================================
+     DEBUG
+  ===================================================== */
 
   function debug(data) {
 
@@ -749,6 +806,10 @@
   }
 
 
+  /* =====================================================
+     ALLY CODE
+  ===================================================== */
+
   function getAllyCode() {
 
     return allyCodeInput.value
@@ -756,6 +817,10 @@
 
   }
 
+
+  /* =====================================================
+     POST
+  ===================================================== */
 
   async function post(
     endpoint,
@@ -778,16 +843,24 @@
         }
       );
 
+
     const text =
       await response.text();
+
 
     let data;
 
     try {
-      data = JSON.parse(text);
+
+      data =
+        JSON.parse(text);
+
     } catch {
+
       data = text;
+
     }
+
 
     if (!response.ok) {
 
@@ -799,19 +872,21 @@
 
     }
 
+
     return data;
 
   }
 
 
   /* =====================================================
-     PLAYER ARENA
+     ARENA
   ===================================================== */
 
   async function loadArena() {
 
     const allyCode =
       getAllyCode();
+
 
     if (!allyCode) {
 
@@ -824,31 +899,47 @@
 
     }
 
+
     setStatus(
       "Получаю Arena..."
     );
 
+
     try {
+
+      /*
+       * ВАЖНО:
+       * Comlink ожидает именно allycode,
+       * а не allyCode.
+       */
 
       const data =
         await post(
           "/playerArena",
           {
-            allyCode
+            allycode:
+              Number(allyCode)
           }
         );
 
+
       debug(data);
 
+
       renderArena(data);
+
 
       setStatus(
         "Arena загружена"
       );
 
+
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        error
+      );
+
 
       setStatus(
         `Ошибка: ${error.message}`,
@@ -869,6 +960,7 @@
     const allyCode =
       getAllyCode();
 
+
     if (!allyCode) {
 
       setStatus(
@@ -880,33 +972,47 @@
 
     }
 
+
     setStatus(
       "Получаю профиль..."
     );
 
+
     try {
+
+      /*
+       * Здесь тоже allycode.
+       */
 
       const data =
         await post(
           "/player",
           {
-            allyCode
+            allycode:
+              Number(allyCode)
           }
         );
 
+
       debug(data);
+
 
       renderPlayer(
         data
       );
 
+
       setStatus(
         "Профиль загружен"
       );
 
+
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        error
+      );
+
 
       setStatus(
         `Ошибка: ${error.message}`,
@@ -922,28 +1028,35 @@
      PLAYER RENDER
   ===================================================== */
 
-  function renderPlayer(data) {
+  function renderPlayer(
+    data
+  ) {
 
     const player =
       data?.player ||
       data;
+
 
     const name =
       player?.name ||
       player?.playerName ||
       "Unknown Player";
 
+
     const level =
       player?.level ??
       player?.playerLevel;
 
+
     playerName.textContent =
       name;
+
 
     playerMeta.textContent =
       level
         ? `Level ${level}`
         : "SWGOH Player";
+
 
     playerCard.classList.add(
       "show"
@@ -956,51 +1069,62 @@
      ARENA RENDER
   ===================================================== */
 
-  function renderArena(data) {
+  function renderArena(
+    data
+  ) {
 
     const profiles =
       data?.pvpProfile ||
       [];
 
+
     const squadArena =
       profiles[0];
+
 
     const rank =
       squadArena?.rank;
 
+
     const player =
       data?.player ||
       data;
+
 
     const name =
       player?.name ||
       data?.name ||
       "Unknown Player";
 
+
     playerName.textContent =
       name;
+
 
     playerRank.textContent =
       rank ??
       "—";
+
 
     playerMeta.textContent =
       player?.level
         ? `Level ${player.level}`
         : "Squad Arena";
 
+
     playerCard.classList.add(
       "show"
     );
 
 
-    /* -----------------------------------------------
-       Arena cells
-    ----------------------------------------------- */
+    /*
+     * Arena cells.
+     */
 
     const cells =
       squadArena?.squad?.cell ||
       [];
+
 
     const sorted =
       [...cells].sort(
@@ -1013,17 +1137,27 @@
           )
       );
 
+
     arenaEl.innerHTML = "";
+
 
     if (!sorted.length) {
 
-      arenaEl.innerHTML =
-        `<div class="arena-row">
-          <div class="position">—</div>
+      arenaEl.innerHTML = `
+
+        <div class="arena-row">
+
+          <div class="position">
+            —
+          </div>
+
           <div class="opponent-name">
             Нет данных Arena
           </div>
-        </div>`;
+
+        </div>
+
+      `;
 
     } else {
 
@@ -1037,22 +1171,27 @@
             "div"
           );
 
+
         row.className =
           "arena-row";
+
 
         const position =
           cell.cellIndex ??
           "—";
 
-        const playerName =
+
+        const opponentName =
           cell.player?.name ||
           cell.name ||
           "Opponent";
+
 
         const allyCode =
           cell.player?.allyCode ||
           cell.allyCode ||
           "";
+
 
         row.innerHTML = `
 
@@ -1066,11 +1205,12 @@
 
             <div class="opponent-name">
               ${escapeHtml(
-                playerName
+                opponentName
               )}
             </div>
 
             <div class="opponent-code">
+
               ${
                 allyCode
                   ? `Ally Code ${escapeHtml(
@@ -1080,11 +1220,13 @@
                     )}`
                   : ""
               }
+
             </div>
 
           </div>
 
         `;
+
 
         arenaEl.appendChild(
           row
@@ -1094,27 +1236,24 @@
 
     }
 
+
     arenaSection.style.display =
       "block";
 
 
-    /* -----------------------------------------------
-       Own squad
-    ----------------------------------------------- */
-
-    const ownSquad =
-      squadArena?.squad?.cell ||
-      [];
+    /*
+     * Squad.
+     */
 
     renderSquad(
-      ownSquad
+      cells
     );
 
   }
 
 
   /* =====================================================
-     SQUAD RENDER
+     SQUAD
   ===================================================== */
 
   async function renderSquad(
@@ -1123,44 +1262,23 @@
 
     squadEl.innerHTML = "";
 
-    const units = [];
-
-    for (
-      const cell
-      of cells
-    ) {
-
-      const unit =
-        cell?.unitDefId ||
-        cell?.unit?.unitDefId;
-
-      if (unit) {
-        units.push(unit);
-      }
-
-    }
 
     /*
-     * Usually squad data may be nested differently.
-     * Try every cell recursively if necessary.
+     * Ищем unitDefId рекурсивно.
+     * Это надёжнее, чем предполагать
+     * конкретную структуру Comlink.
      */
 
-    if (!units.length) {
-
-      const found =
-        findUnitDefIds(
-          cells
-        );
-
-      units.push(
-        ...found
+    const found =
+      findUnitDefIds(
+        cells
       );
 
-    }
 
     const uniqueUnits =
-      [...new Set(units)]
+      [...new Set(found)]
         .slice(0, 5);
+
 
     if (!uniqueUnits.length) {
 
@@ -1171,16 +1289,17 @@
 
     }
 
+
     squadSection.style.display =
       "block";
 
 
-    /*
-     * Create placeholders immediately,
-     * then load images asynchronously.
-     */
-
     const elements = [];
+
+
+    /*
+     * Сначала создаём все карточки.
+     */
 
     for (
       const unitDefId
@@ -1192,8 +1311,10 @@
           "div"
         );
 
+
       wrapper.className =
         "unit";
+
 
       wrapper.innerHTML = `
 
@@ -1215,9 +1336,11 @@
 
       `;
 
+
       squadEl.appendChild(
         wrapper
       );
+
 
       elements.push({
         unitDefId,
@@ -1228,10 +1351,12 @@
 
 
     /*
-     * Load portraits in parallel.
+     * Теперь параллельно запрашиваем
+     * картинки у Proxy.
      */
 
     await Promise.all(
+
       elements.map(
         async ({
           unitDefId,
@@ -1248,11 +1373,13 @@
                 }
               );
 
+
             console.log(
-              "Portrait:",
+              "[Portrait]",
               unitDefId,
               result
             );
+
 
             if (
               result?.ok &&
@@ -1264,55 +1391,58 @@
                   "img"
                 );
 
+
               image.className =
                 "portrait";
+
 
               image.alt =
                 result.name ||
                 unitDefId;
 
+
               image.loading =
                 "lazy";
 
+
               image.src =
                 result.url;
+
 
               const portraitWrap =
                 wrapper.querySelector(
                   ".portrait-wrap"
                 );
 
+
               portraitWrap.innerHTML =
                 "";
+
 
               portraitWrap.appendChild(
                 image
               );
 
-              /*
-               * If the remote image itself
-               * fails, leave a placeholder.
-               */
 
               image.onerror =
                 () => {
 
-                  portraitWrap.innerHTML =
-                    `<div class="portrait-placeholder">
+                  portraitWrap.innerHTML = `
+
+                    <div class="portrait-placeholder">
                       ?
-                    </div>`;
+                    </div>
+
+                  `;
 
                 };
 
-              /*
-               * Use the proper character
-               * name returned by the proxy.
-               */
 
               const nameEl =
                 wrapper.querySelector(
                   ".unit-name"
                 );
+
 
               if (
                 nameEl &&
@@ -1323,6 +1453,14 @@
                   result.name;
 
               }
+
+            } else {
+
+              console.warn(
+                "Portrait not found:",
+                unitDefId,
+                result
+              );
 
             }
 
@@ -1338,11 +1476,9 @@
 
         }
       )
+
     );
 
-    /*
-     * Datacron.
-     */
 
     renderDatacron(
       cells
@@ -1352,7 +1488,7 @@
 
 
   /* =====================================================
-     FIND UNIT IDS
+     FIND UNIT DEF IDS
   ===================================================== */
 
   function findUnitDefIds(
@@ -1364,8 +1500,11 @@
       value === null ||
       value === undefined
     ) {
+
       return result;
+
     }
+
 
     if (
       typeof value === "object"
@@ -1382,6 +1521,7 @@
 
       }
 
+
       for (
         const key
         of Object.keys(value)
@@ -1395,6 +1535,7 @@
       }
 
     }
+
 
     return result;
 
@@ -1414,6 +1555,7 @@
         cells
       );
 
+
     if (!found) {
 
       datacronEl.style.display =
@@ -1423,34 +1565,43 @@
 
     }
 
+
     const id =
       found.id ||
       found.datacronId ||
       "Unknown";
 
+
     const setId =
       found.setId ||
       "—";
+
 
     const tier =
       found.highestTierApplied ??
       "—";
 
+
     datacronText.innerHTML = `
 
       ID: ${escapeHtml(
         String(id)
-      )}<br>
+      )}
+
+      <br>
 
       Set: ${escapeHtml(
         String(setId)
-      )}<br>
+      )}
+
+      <br>
 
       Tier: ${escapeHtml(
         String(tier)
       )}
 
     `;
+
 
     datacronEl.style.display =
       "block";
@@ -1472,6 +1623,7 @@
 
     }
 
+
     if (
       value.datacron &&
       typeof value.datacron ===
@@ -1482,6 +1634,7 @@
 
     }
 
+
     if (
       value.datacronId
     ) {
@@ -1489,6 +1642,7 @@
       return value;
 
     }
+
 
     for (
       const key
@@ -1500,11 +1654,15 @@
           value[key]
         );
 
+
       if (result) {
+
         return result;
+
       }
 
     }
+
 
     return null;
 
@@ -1512,7 +1670,7 @@
 
 
   /* =====================================================
-     PORTRAIT TEST
+     PORTRAIT STATUS TEST
   ===================================================== */
 
   async function testPortraits() {
@@ -1521,23 +1679,29 @@
       "Проверяю систему портретов..."
     );
 
+
     try {
 
-      const status =
+      const response =
         await fetch(
           `${PROXY}/portraitStatus`
         );
 
+
       const data =
-        await status.json();
+        await response.json();
+
 
       debug(data);
 
+
       setStatus(
         `Портретов найдено: ${
-          data.portraits ?? "?"
+          data.portraits ??
+          "?"
         }`
       );
+
 
     } catch (error) {
 
@@ -1552,7 +1716,7 @@
 
 
   /* =====================================================
-     UTILS
+     UNIT NAME
   ===================================================== */
 
   function cleanUnitName(
@@ -1562,22 +1726,32 @@
     return String(
       unitDefId || ""
     )
+
       .replace(
         /:SEVEN_STAR$/i,
         ""
       )
+
       .replace(
         /:SIX_STAR$/i,
         ""
       )
+
       .replace(
         /:FIVE_STAR$/i,
         ""
       )
+
+      .replace(
+        /:FOUR_STAR$/i,
+        ""
+      )
+
       .replace(
         /_LEGENDARY$/i,
         ""
       )
+
       .replace(
         /_/g,
         " "
@@ -1586,6 +1760,10 @@
   }
 
 
+  /* =====================================================
+     HTML ESCAPE
+  ===================================================== */
+
   function escapeHtml(
     value
   ) {
@@ -1593,22 +1771,27 @@
     return String(
       value ?? ""
     )
+
       .replace(
         /&/g,
         "&amp;"
       )
+
       .replace(
         /</g,
         "&lt;"
       )
+
       .replace(
         />/g,
         "&gt;"
       )
+
       .replace(
         /"/g,
         "&quot;"
       )
+
       .replace(
         /'/g,
         "&#039;"
@@ -1618,7 +1801,7 @@
 
 
   /* =====================================================
-     ENTER KEY
+     ENTER
   ===================================================== */
 
   allyCodeInput.addEventListener(
@@ -1626,7 +1809,8 @@
     (event) => {
 
       if (
-        event.key === "Enter"
+        event.key ===
+        "Enter"
       ) {
 
         loadArena();
