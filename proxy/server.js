@@ -1,11 +1,12 @@
 const express = require("express");
 const cors = require("cors");
+const zlib = require("zlib");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const COMLINK_URL = (process.env.COMLINK_URL || "https://arena-tracker-2uod.onrender.com").replace(/\/+$/, "");
 const ASSET_URL = (process.env.ASSET_URL || "https://arena-tracker-assets.onrender.com").replace(/\/+$/, "");
-const UNITS_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/units.json";
+const UNITS_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/units.json.br";
 
 app.use(cors());
 app.use(express.json());
@@ -37,10 +38,7 @@ async function requestComlink(path, payload = {}) {
     return fetchJson(`${COMLINK_URL}${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            payload,
-            enums: false
-        })
+        body: JSON.stringify({ payload })
     });
 }
 
@@ -49,8 +47,16 @@ async function getUnits() {
         return unitsCache;
     }
 
-    const data = await fetchJson(UNITS_URL);
-    const units = Array.isArray(data) ? data : data.data;
+    const response = await fetch(UNITS_URL);
+
+    if (!response.ok) {
+        throw new Error(`Units download failed: HTTP ${response.status}`);
+    }
+
+    const compressed = Buffer.from(await response.arrayBuffer());
+    const text = zlib.brotliDecompressSync(compressed).toString("utf8");
+    const parsed = JSON.parse(text);
+    const units = Array.isArray(parsed) ? parsed : parsed.data;
 
     if (!Array.isArray(units)) {
         throw new Error("Invalid units data");
@@ -67,41 +73,26 @@ async function getMetadata() {
         return metadataCache;
     }
 
-    metadataCache = await requestComlink("/metadata");
+    metadataCache = await fetchJson(`${COMLINK_URL}/metadata`);
     metadataCacheTime = Date.now();
 
     return metadataCache;
 }
 
-function findUnit(units, definitionId) {
-    const baseId = String(definitionId).split(":")[0];
-
-    return units.find(unit =>
-        unit.baseId === baseId ||
-        unit.id === definitionId
-    );
-}
-
 async function getUnit(definitionId) {
+    const baseId = String(definitionId).split(":")[0];
     const units = await getUnits();
-    const unit = findUnit(units, definitionId);
+
+    const unit = units.find(item => item.baseId === baseId);
 
     if (!unit) {
-        throw new Error(`Unit not found: ${definitionId}`);
+        throw new Error(`Unit not found: ${baseId}`);
     }
 
     return {
         ...unit,
         definitionId
     };
-}
-
-function getAssetVersion(metadata) {
-    return (
-        metadata?.assetVersion ||
-        metadata?.data?.assetVersion ||
-        metadata?.metadata?.assetVersion
-    );
 }
 
 app.get("/health", (_, res) => {
@@ -199,14 +190,13 @@ app.get("/unit", async (req, res) => {
 
 app.get("/characterImage", async (req, res) => {
     try {
-        const { definitionId, baseId } = req.query;
-        const id = definitionId || baseId;
+        const { definitionId } = req.query;
 
-        if (!id) {
-            return res.status(400).json({ error: "definitionId or baseId is required" });
+        if (!definitionId) {
+            return res.status(400).json({ error: "definitionId is required" });
         }
 
-        const unit = await getUnit(id);
+        const unit = await getUnit(definitionId);
 
         if (!unit.thumbnailName) {
             return res.status(404).json({
@@ -216,7 +206,7 @@ app.get("/characterImage", async (req, res) => {
         }
 
         const metadata = await getMetadata();
-        const version = getAssetVersion(metadata);
+        const version = metadata?.assetVersion;
 
         if (!version) {
             return res.status(500).json({
@@ -243,7 +233,7 @@ app.get("/characterImage", async (req, res) => {
             return res.status(response.status).json({
                 error: "Asset extractor error",
                 details: text.slice(0, 500),
-                definitionId: id,
+                definitionId,
                 baseId: unit.baseId,
                 thumbnailName: unit.thumbnailName,
                 assetName,
