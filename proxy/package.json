@@ -1,11 +1,11 @@
 {
-  "name": "arena-tracker-proxy",
+  "name": "arena-proxy",
   "version": "1.0.0",
-  "type": "module",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "fuse.js": "^7.5.0"
+    "express": "^5.1.0"
   }
 }
