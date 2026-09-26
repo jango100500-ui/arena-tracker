@@ -16,8 +16,10 @@ input{flex:1;min-width:0;padding:13px 15px;border:1px solid #303239;border-radiu
 input:focus{border-color:#666a74}
 button{border:0;border-radius:12px;padding:13px 18px;background:#e8e8ea;color:#111;font-size:15px;font-weight:600;cursor:pointer}
 button.secondary{background:#292b31;color:#f4f4f5}
+button.danger{background:#4a2529;color:#ffb5b5}
 button:disabled{opacity:.5;cursor:default}
 .actions{display:flex;gap:10px}
+.monitor-actions{display:flex;gap:10px;margin-top:10px}
 .status{min-height:24px;margin:14px 0;color:#8f929a}
 .card{background:#18191d;border:1px solid #292b31;border-radius:16px;padding:18px;margin-bottom:16px}
 .card h2{margin:0 0 14px;font-size:20px}
@@ -40,6 +42,31 @@ button:disabled{opacity:.5;cursor:default}
 .star-off{color:#41434a}
 .progress{margin-top:3px;font-size:11px;color:#aeb0b7}
 .title{font-size:16px;font-weight:600}
+.monitor-card{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.monitor-title{font-size:18px;font-weight:700}
+.monitor-meta{margin-top:5px;color:#8f929a;font-size:13px}
+.monitor-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#666;margin-right:7px}
+.monitor-dot.on{background:#5fcf79}
+.log-card{padding:0;overflow:hidden}
+.log-head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid #292b31}
+.log-title{font-size:20px;font-weight:700}
+.log-empty{padding:24px 18px;color:#8f929a;text-align:center}
+.log-entry{padding:18px;border-bottom:1px solid #292b31}
+.log-entry:last-child{border-bottom:0}
+.log-entry.win{border-left:3px solid #55c878}
+.log-entry.loss{border-left:3px solid #d85b67}
+.log-top{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.log-result{font-weight:800;font-size:15px}
+.win .log-result{color:#65d184}
+.loss .log-result{color:#ef727d}
+.log-time{font-size:12px;color:#858892}
+.log-rank{font-size:23px;font-weight:800;margin-top:8px}
+.log-delta{font-size:13px;color:#aeb0b7;margin-left:7px}
+.log-pack-title{margin-top:14px;font-size:12px;color:#858892}
+.log-pack{display:flex;gap:8px;margin-top:8px;overflow-x:auto;padding-bottom:2px}
+.log-unit{flex:0 0 54px;text-align:center}
+.log-unit img{width:54px;height:54px;border-radius:50%;object-fit:cover;background:#0b0c0e;border:2px solid #34363d}
+.log-unit-name{font-size:9px;line-height:1.1;margin-top:4px;color:#c8cad0;word-break:break-word}
 .json-card{background:#15161a;border-radius:14px;overflow:hidden;margin-top:20px}
 .json-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#1d1e23}
 .json-title{font-size:13px;color:#a9abb3}
@@ -51,13 +78,16 @@ pre{margin:0;padding:14px;max-height:420px;overflow:auto;font-size:11px;line-hei
 body{padding:18px 12px}
 h1{font-size:24px}
 .input-row{flex-direction:column}
-.actions button{flex:1}
+.actions button,.monitor-actions button{flex:1}
 .player-info{grid-template-columns:1fr}
 .arena-grid{gap:8px}
 .unit-portrait{width:68px;height:68px}
 .unit-name{font-size:10px}
 .stars{font-size:9px}
 .progress{font-size:10px}
+.monitor-card{align-items:flex-start;flex-direction:column}
+.monitor-actions{width:100%}
+.log-top{align-items:flex-start;flex-direction:column}
 }
 </style>
 </head>
@@ -75,9 +105,29 @@ h1{font-size:24px}
 <button id="profileBtn" class="secondary">Профиль</button>
 </div>
 
-<div id="status" class="status"></div>
+<div class="status" id="status"></div>
 
 <section id="result" class="hidden"></section>
+
+<section class="card hidden" id="monitorCard">
+<div class="monitor-card">
+<div>
+<div class="monitor-title"><span class="monitor-dot" id="monitorDot"></span>Мониторинг арены</div>
+<div class="monitor-meta" id="monitorMeta">Остановлен</div>
+</div>
+<div class="monitor-actions">
+<button id="monitorBtn">Запустить</button>
+<button id="clearLogBtn" class="danger">Очистить</button>
+</div>
+</div>
+</section>
+
+<section class="card log-card hidden" id="logCard">
+<div class="log-head">
+<div class="log-title">История боёв</div>
+</div>
+<div id="log"></div>
+</section>
 
 <section class="json-card">
 <div class="json-head">
@@ -90,6 +140,8 @@ h1{font-size:24px}
 
 <script>
 const API="https://arena-tracker-proxy.onrender.com";
+const POLL_INTERVAL=5000;
+const STORAGE_PREFIX="arena_tracker_history_";
 
 const allyCode=document.getElementById("allyCode");
 const arenaBtn=document.getElementById("arenaBtn");
@@ -98,6 +150,18 @@ const status=document.getElementById("status");
 const result=document.getElementById("result");
 const json=document.getElementById("json");
 const copyBtn=document.getElementById("copyBtn");
+const monitorCard=document.getElementById("monitorCard");
+const monitorBtn=document.getElementById("monitorBtn");
+const clearLogBtn=document.getElementById("clearLogBtn");
+const monitorDot=document.getElementById("monitorDot");
+const monitorMeta=document.getElementById("monitorMeta");
+const logCard=document.getElementById("logCard");
+const log=document.getElementById("log");
+
+let monitorTimer=null;
+let monitoring=false;
+let lastSnapshot=null;
+let history=[];
 
 function setLoading(value){
     arenaBtn.disabled=value;
@@ -133,30 +197,18 @@ function escapeHtml(text){
 function renderStars(rarity){
     const value=Number(rarity)||0;
     let html="";
-
     for(let i=1;i<=7;i++){
         html+=`<span class="${i<=value?"star-on":"star-off"}">★</span>`;
     }
-
     return html;
 }
 
 function renderProgress(unit){
     const gear=Number(unit.gearTier)||0;
     const relic=Number(unit.relicTier)||0;
-
-    if(relic>0&&gear>0){
-        return `G${gear} · R${relic}`;
-    }
-
-    if(relic>0){
-        return `R${relic}`;
-    }
-
-    if(gear>0){
-        return `G${gear}`;
-    }
-
+    if(relic>0&&gear>0) return `G${gear} · R${relic}`;
+    if(relic>0) return `R${relic}`;
+    if(gear>0) return `G${gear}`;
     return "";
 }
 
@@ -175,6 +227,138 @@ function unitCard(unit){
             <div class="progress">${escapeHtml(renderProgress(unit))}</div>
         </div>
     `;
+}
+
+function normalizeArena(data){
+    const profiles=Array.isArray(data.pvpProfile)?data.pvpProfile:[];
+    return profiles.map(profile=>({
+        tab:profile.tab,
+        rank:Number(profile.rank)||0,
+        squad:(profile?.squad?.cell||[]).map(unit=>({
+            id:unit.unitDefId||unit.definitionId||"",
+            name:unit.name||unit.baseId||unit.unitDefId||"",
+            image:`${API}/characterImage?definitionId=${encodeURIComponent(unit.unitDefId||unit.definitionId||"")}`
+        }))
+    }));
+}
+
+function getStorageKey(code){
+    return `${STORAGE_PREFIX}${code}`;
+}
+
+function loadHistory(code){
+    try{
+        const data=JSON.parse(localStorage.getItem(getStorageKey(code))||"[]");
+        history=Array.isArray(data)?data:[];
+    }catch{
+        history=[];
+    }
+    renderHistory();
+}
+
+function saveHistory(code){
+    localStorage.setItem(getStorageKey(code),JSON.stringify(history.slice(0,500)));
+}
+
+function snapshotForTab(data,tab){
+    return normalizeArena(data).find(item=>String(item.tab)===String(tab));
+}
+
+function makeSnapshot(data){
+    const arenas=normalizeArena(data);
+    return {
+        time:Date.now(),
+        arenas
+    };
+}
+
+function addEvent(previous,current,tab){
+    if(!previous||!current||previous.rank===current.rank) return;
+
+    const delta=previous.rank-current.rank;
+    const win=delta>0;
+    const event={
+        id:`${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        time:Date.now(),
+        tab,
+        from:previous.rank,
+        to:current.rank,
+        delta,
+        result:win?"win":"loss",
+        squad:current.squad
+    };
+
+    history.unshift(event);
+    history=history.slice(0,500);
+    saveHistory(allyCode.value.replace(/\D/g,""));
+    renderHistory();
+}
+
+function monitorData(data){
+    const snapshot=makeSnapshot(data);
+
+    if(lastSnapshot){
+        for(const current of snapshot.arenas){
+            const previous=lastSnapshot.arenas.find(item=>String(item.tab)===String(current.tab));
+            addEvent(previous,current,current.tab);
+        }
+    }
+
+    lastSnapshot=snapshot;
+    renderMonitorMeta();
+}
+
+function renderMonitorMeta(){
+    if(!monitoring){
+        monitorDot.classList.remove("on");
+        monitorMeta.textContent=lastSnapshot
+            ? `Последняя проверка: ${new Date(lastSnapshot.time).toLocaleTimeString("ru-RU")}`
+            : "Остановлен";
+        monitorBtn.textContent="Запустить";
+        return;
+    }
+
+    monitorDot.classList.add("on");
+    monitorBtn.textContent="Остановить";
+    monitorMeta.textContent=`Проверка каждые ${POLL_INTERVAL/1000} сек · последняя: ${new Date(lastSnapshot?.time||Date.now()).toLocaleTimeString("ru-RU")}`;
+}
+
+function renderHistory(){
+    if(!history.length){
+        logCard.classList.remove("hidden");
+        log.innerHTML=`<div class="log-empty">Изменений позиции пока нет</div>`;
+        return;
+    }
+
+    logCard.classList.remove("hidden");
+
+    log.innerHTML=history.map(event=>{
+        const delta=Math.abs(event.delta);
+        const arrow=event.result==="win"?"↑":"↓";
+        const title=event.result==="win"?"ПОБЕДА":"ПОРАЖЕНИЕ";
+        const text=event.result==="win"
+            ?`#${event.from} → #${event.to}`
+            :`#${event.from} → #${event.to}`;
+
+        return `
+            <article class="log-entry ${event.result}">
+                <div class="log-top">
+                    <div class="log-result">${event.result==="win"?"🟢":"🔴"} ${title}</div>
+                    <div class="log-time">${new Date(event.time).toLocaleString("ru-RU")}</div>
+                </div>
+                <div class="log-rank">${escapeHtml(text)} <span class="log-delta">${arrow}${delta}</span></div>
+                <div class="log-pack-title">Наш состав в момент события</div>
+                <div class="log-pack">
+                    ${(event.squad||[]).map(unit=>`
+                        <div class="log-unit">
+                            <img src="${escapeHtml(unit.image)}" alt="${escapeHtml(unit.name)}" loading="lazy">
+                            <div class="log-unit-name">${escapeHtml(unit.name)}</div>
+                        </div>
+                    `).join("")}
+                </div>
+            </article>
+        `;
+    }).join("");
 }
 
 function renderArena(data){
@@ -204,7 +388,6 @@ function renderArena(data){
 
         ${profiles.map(profile=>{
             const cells=profile?.squad?.cell||[];
-
             return `
                 <div class="card">
                     <h2>Арена ${profile.tab||""}</h2>
@@ -218,6 +401,7 @@ function renderArena(data){
     `;
 
     result.classList.remove("hidden");
+    monitorCard.classList.remove("hidden");
 }
 
 function renderProfile(data){
@@ -249,6 +433,19 @@ function renderProfile(data){
     result.classList.remove("hidden");
 }
 
+async function fetchArena(){
+    const code=allyCode.value.replace(/\D/g,"");
+
+    if(!code) throw new Error("Введи Ally Code");
+
+    const response=await fetch(`${API}/arena?allyCode=${encodeURIComponent(code)}`);
+    const data=await response.json();
+
+    if(!response.ok) throw new Error(data.error||`HTTP ${response.status}`);
+
+    return data;
+}
+
 async function request(path,renderer){
     const code=allyCode.value.replace(/\D/g,"");
 
@@ -265,12 +462,17 @@ async function request(path,renderer){
         const response=await fetch(`${API}${path}?allyCode=${encodeURIComponent(code)}`);
         const data=await response.json();
 
-        if(!response.ok){
-            throw new Error(data.error||`HTTP ${response.status}`);
-        }
+        if(!response.ok) throw new Error(data.error||`HTTP ${response.status}`);
 
         showJson(data);
         renderer(data);
+
+        if(path==="/arena"){
+            loadHistory(code);
+            lastSnapshot=null;
+            monitorData(data);
+        }
+
         setStatus("");
     }catch(error){
         showJson({error:error.message});
@@ -280,12 +482,70 @@ async function request(path,renderer){
     }
 }
 
+async function poll(){
+    if(!monitoring) return;
+
+    try{
+        const data=await fetchArena();
+        showJson(data);
+        monitorData(data);
+        setStatus("");
+    }catch(error){
+        setStatus(`Мониторинг: ${error.message}`,true);
+    }
+}
+
+function startMonitoring(){
+    if(monitoring) return;
+
+    monitoring=true;
+    renderMonitorMeta();
+
+    poll();
+    monitorTimer=setInterval(poll,POLL_INTERVAL);
+}
+
+function stopMonitoring(){
+    monitoring=false;
+
+    if(monitorTimer){
+        clearInterval(monitorTimer);
+        monitorTimer=null;
+    }
+
+    renderMonitorMeta();
+}
+
+monitorBtn.addEventListener("click",()=>{
+    if(monitoring) stopMonitoring();
+    else startMonitoring();
+});
+
+clearLogBtn.addEventListener("click",()=>{
+    const code=allyCode.value.replace(/\D/g,"");
+
+    if(!code) return;
+
+    if(!confirm("Очистить историю арены для этого Ally Code?")) return;
+
+    history=[];
+    localStorage.removeItem(getStorageKey(code));
+    renderHistory();
+});
+
 arenaBtn.addEventListener("click",()=>request("/arena",renderArena));
 profileBtn.addEventListener("click",()=>request("/profile",renderProfile));
 
 allyCode.addEventListener("keydown",event=>{
-    if(event.key==="Enter"){
-        request("/arena",renderArena);
+    if(event.key==="Enter") request("/arena",renderArena);
+});
+
+allyCode.addEventListener("change",()=>{
+    const code=allyCode.value.replace(/\D/g,"");
+
+    if(code){
+        loadHistory(code);
+        lastSnapshot=null;
     }
 });
 
@@ -295,6 +555,9 @@ copyBtn.addEventListener("click",async()=>{
     copyBtn.textContent="Скопировано";
     setTimeout(()=>copyBtn.textContent=old,1200);
 });
+
+const initialCode=allyCode.value.replace(/\D/g,"");
+if(initialCode) loadHistory(initialCode);
 </script>
 </body>
 </html>
