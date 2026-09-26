@@ -6,8 +6,6 @@ const PORT = process.env.PORT || 10000;
 const COMLINK_URL =
   "https://arena-tracker-2uod.onrender.com";
 
-const ICONS_API =
-  "https://api.github.com/repos/tools4swgoh/swgoh-icons/git/trees/main?recursive=1";
 const GAMEDATA_URL =
   "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/gameDataItems.json";
 
@@ -18,14 +16,176 @@ const ALLOWED_ROUTES = {
 };
 
 
-let iconFiles = null;
-let fuse = null;
+/*
+ * Портреты из публичного swgoh-icons.
+ *
+ * Репозиторий:
+ * tools4swgoh/swgoh-icons
+ *
+ * Важно:
+ * URL строятся напрямую через raw.githubusercontent.com.
+ */
+
+const CHARACTER_PORTRAITS = [
+
+  {
+    name: "Leia Organa",
+    file: "65px-Unit-Character-Leia_Organa-portrait.png"
+  },
+
+  {
+    name: "Captain Drogan",
+    file: "65px-Unit-Character-Captain_Drogan-portrait.png"
+  },
+
+  {
+    name: "Captain Rex",
+    file: '65px-Unit-Character-CT-7567_%22Rex%22-portrait.png'
+  },
+
+  {
+    name: "R2-D2",
+    file: "65px-Unit-Character-R2-D2-portrait.png"
+  },
+
+  {
+    name: "C-3PO",
+    file: "65px-Unit-Character-C-3PO-portrait.png"
+  },
+
+  {
+    name: "Threepio & Chewie",
+    file: "65px-Unit-Character-Threepio_%26_Chewie-portrait.png"
+  },
+
+  {
+    name: "Chewbacca",
+    file: "65px-Unit-Character-Chewbacca-portrait.png"
+  },
+
+  {
+    name: "Han Solo",
+    file: "65px-Unit-Character-Han_Solo-portrait.png"
+  },
+
+  {
+    name: "Luke Skywalker",
+    file: "65px-Unit-Character-Luke_Skywalker_%28Farmboy%29-portrait.png"
+  },
+
+  {
+    name: "Darth Vader",
+    file: "65px-Unit-Character-Darth_Vader-portrait.png"
+  },
+
+  {
+    name: "Emperor Palpatine",
+    file: "65px-Unit-Character-Emperor_Palpatine-portrait.png"
+  },
+
+  {
+    name: "General Kenobi",
+    file: "65px-Unit-Character-General_Kenobi-portrait.png"
+  },
+
+  {
+    name: "General Skywalker",
+    file: "65px-Unit-Character-General_Skywalker-portrait.png"
+  },
+
+  {
+    name: "Jedi Master Kenobi",
+    file: "65px-Unit-Character-Jedi_Master_Kenobi-portrait.png"
+  },
+
+  {
+    name: "Jedi Master Luke Skywalker",
+    file: "65px-Unit-Character-Jedi_Master_Luke_Skywalker-portrait.png"
+  },
+
+  {
+    name: "Rey",
+    file: "65px-Unit-Character-Rey-portrait.png"
+  },
+
+  {
+    name: "Kylo Ren",
+    file: "65px-Unit-Character-Kylo_Ren-portrait.png"
+  },
+
+  {
+    name: "Supreme Leader Kylo Ren",
+    file: "65px-Unit-Character-Supreme_Leader_Kylo_Ren-portrait.png"
+  },
+
+  {
+    name: "Darth Revan",
+    file: "65px-Unit-Character-Darth_Revan-portrait.png"
+  },
+
+  {
+    name: "Darth Malgus",
+    file: "65px-Unit-Character-Darth_Malgus-portrait.png"
+  },
+
+  {
+    name: "Jabba the Hutt",
+    file: "65px-Unit-Character-Jabba_the_Hutt-portrait.png"
+  },
+
+  {
+    name: "Grand Admiral Thrawn",
+    file: "65px-Unit-Character-Grand_Admiral_Thrawn-portrait.png"
+  },
+
+  {
+    name: "Grand Master Yoda",
+    file: "65px-Unit-Character-Grand_Master_Yoda-portrait.png"
+  },
+
+  {
+    name: "Mace Windu",
+    file: "65px-Unit-Character-Mace_Windu-portrait.png"
+  },
+
+  {
+    name: "Ahsoka Tano",
+    file: "65px-Unit-Character-Ahsoka_Tano_%28Snips%29-portrait.png"
+  },
+
+  {
+    name: "Commander Ahsoka Tano",
+    file: "65px-Unit-Character-Commander_Ahsoka_Tano-portrait.png"
+  }
+
+];
+
+
 let gameData = null;
+let fuse = null;
 
 
 /* =========================================================
    HELPERS
 ========================================================= */
+
+function makePortraitUrl(file) {
+
+  return (
+    "https://raw.githubusercontent.com/" +
+    "tools4swgoh/swgoh-icons/main/" +
+    encodeURIComponent(file)
+  );
+
+}
+
+
+/*
+ * encodeURIComponent всего имени файла превращает
+ * / и другие символы в URL encoding.
+ *
+ * Здесь файловый путь находится в корне, поэтому это нормально.
+ */
 
 function normalize(text) {
 
@@ -37,72 +197,7 @@ function normalize(text) {
 
 
 /* =========================================================
-   LOAD ICON FILES
-========================================================= */
-
-async function loadIconFiles(debug) {
-
-  if (iconFiles) {
-
-    debug.push(
-      `Icon cache: ${iconFiles.length} files`
-    );
-
-    return iconFiles;
-
-  }
-
-
-  debug.push(
-    "Загружаем список иконок..."
-  );
-
-
-  const response =
-    await fetch(ICONS_API, {
-      headers: {
-        "User-Agent":
-          "arena-tracker"
-      }
-    });
-
-
-  if (!response.ok) {
-
-    throw new Error(
-      `Icons API HTTP ${response.status}`
-    );
-
-  }
-
-
-  const data =
-    await response.json();
-
-
-  iconFiles =
-    data.tree
-      .filter(file =>
-        file.type === "blob" &&
-        file.path
-          .toLowerCase()
-          .endsWith(".png")
-      )
-      .map(file => file.path);
-
-
-  debug.push(
-    `Всего PNG: ${iconFiles.length}`
-  );
-
-
-  return iconFiles;
-
-}
-
-
-/* =========================================================
-   LOAD GAMEDATA
+   GAMEDATA
 ========================================================= */
 
 async function loadGameData(debug) {
@@ -151,10 +246,10 @@ async function loadGameData(debug) {
 
 
 /* =========================================================
-   BUILD FUSE
+   FUSE
 ========================================================= */
 
-async function buildFuse(debug) {
+function buildFuse(debug) {
 
   if (fuse) {
 
@@ -167,49 +262,14 @@ async function buildFuse(debug) {
   }
 
 
-  const files =
-    await loadIconFiles(debug);
-
-
-  const characterFiles =
-    files.filter(file => {
-
-      const lower =
-        file.toLowerCase();
-
-      return (
-        lower.includes("character") &&
-        lower.includes("portrait")
-      );
-
-    });
-
-
   debug.push(
-    `Портретов персонажей: ${characterFiles.length}`
+    `Портретов в локальном индексе: ${CHARACTER_PORTRAITS.length}`
   );
-
-
-  const documents =
-    characterFiles.map(file => ({
-
-      path: file,
-
-      name:
-        file
-          .split("/")
-          .pop()
-          .replace(
-            /\.png$/i,
-            ""
-          )
-
-    }));
 
 
   fuse =
     new Fuse(
-      documents,
+      CHARACTER_PORTRAITS,
       {
 
         keys: [
@@ -221,11 +281,11 @@ async function buildFuse(debug) {
 
         includeScore: true,
 
-        threshold: 0.65,
+        threshold: 0.60,
 
         ignoreLocation: true,
 
-        minMatchCharLength: 3
+        minMatchCharLength: 2
 
       }
     );
@@ -242,7 +302,7 @@ async function buildFuse(debug) {
 
 
 /* =========================================================
-   FIND UNIT DEFINITION
+   UNIT DEFINITION
 ========================================================= */
 
 function findUnitDefinition(
@@ -272,83 +332,65 @@ function findUnitDefinition(
   );
 
 
-  const collections = [];
-
-
-  if (
-    Array.isArray(
-      data.UnitDefinitions
-    )
-  ) {
-
-    collections.push(
-      data.UnitDefinitions
-    );
-
-  }
-
-
-  if (
-    Array.isArray(
-      data.unitDefinitions
-    )
-  ) {
-
-    collections.push(
-      data.unitDefinitions
-    );
-
-  }
-
-
   /*
-   * Иногда gamedata содержит объект,
-   * а не массив.
+   * Иногда UnitDefinitions — массив.
    */
+
   if (
-    data.UnitDefinitions &&
-    typeof data.UnitDefinitions === "object" &&
-    !Array.isArray(data.UnitDefinitions)
+    Array.isArray(
+      data.UnitDefinitions
+    )
   ) {
 
-    const direct =
-      data.UnitDefinitions[baseId];
+    const found =
+      data.UnitDefinitions.find(
+        unit => {
+
+          const id =
+            unit.id ||
+            unit.unitId ||
+            unit.defId ||
+            unit.baseId;
+
+          return (
+            id === baseId ||
+            id === unitDefId
+          );
+
+        }
+      );
 
 
-    if (direct) {
+    if (found) {
 
       debug.push(
         "UnitDefinition найден ✓"
       );
 
-      return direct;
+      return found;
 
     }
 
   }
 
 
-  for (
-    const collection
-    of collections
+  /*
+   * Иногда это объект.
+   */
+
+  if (
+    data.UnitDefinitions &&
+    typeof data.UnitDefinitions ===
+      "object" &&
+    !Array.isArray(
+      data.UnitDefinitions
+    )
   ) {
 
     const found =
-      collection.find(unit => {
-
-        const id =
-          unit.id ||
-          unit.unitId ||
-          unit.defId ||
-          unit.baseId;
-
-
-        return (
-          id === baseId ||
-          id === unitDefId
-        );
-
-      });
+      data.UnitDefinitions[
+        baseId
+      ];
 
 
     if (found) {
@@ -375,7 +417,7 @@ function findUnitDefinition(
 
 
 /* =========================================================
-   GET POSSIBLE NAMES
+   NAMES
 ========================================================= */
 
 function getPossibleNames(
@@ -385,65 +427,107 @@ function getPossibleNames(
 
   const names = [];
 
-
   const baseId =
     unitDefId
       ?.split(":")[0];
 
 
   if (baseId) {
-    names.push(baseId);
+
+    names.push(
+      baseId
+    );
+
   }
 
 
-  if (!definition) {
+  if (definition) {
 
-    return [
-      ...new Set(names)
+    const fields = [
+
+      "name",
+      "displayName",
+      "characterName",
+      "localizedName",
+      "unitName",
+      "shortName",
+      "baseName",
+      "nameKey"
+
     ];
 
+
+    for (
+      const field
+      of fields
+    ) {
+
+      const value =
+        definition[field];
+
+
+      if (
+        typeof value === "string" &&
+        value.length > 1
+      ) {
+
+        names.push(
+          value
+        );
+
+      }
+
+    }
+
   }
 
 
-  const fields = [
+  /*
+   * Надёжные алиасы для наших текущих
+   * пяти персонажей.
+   *
+   * Это не заменяет Fuse — наоборот,
+   * даёт ему нормальное человеческое
+   * имя для поиска.
+   */
 
-    "name",
+  const aliases = {
 
-    "displayName",
+    GLLEIA: [
+      "Leia Organa"
+    ],
 
-    "characterName",
+    CAPTAINDROGAN: [
+      "Captain Drogan"
+    ],
 
-    "localizedName",
+    R2D2_LEGENDARY: [
+      "R2-D2"
+    ],
 
-    "unitName",
+    CAPTAINREX: [
+      "Captain Rex",
+      "CT-7567 Rex"
+    ],
 
-    "shortName",
+    C3POCHEWBACCA: [
+      "Threepio & Chewie",
+      "C-3PO",
+      "Chewbacca"
+    ]
 
-    "baseName",
-
-    "nameKey"
-
-  ];
-
-
-  for (
-    const field
-    of fields
-  ) {
-
-    const value =
-      definition[field];
+  };
 
 
-    if (
-      typeof value ===
-      "string" &&
-      value.length > 1
-    ) {
+  const aliasList =
+    aliases[baseId];
 
-      names.push(value);
 
-    }
+  if (aliasList) {
+
+    names.push(
+      ...aliasList
+    );
 
   }
 
@@ -456,7 +540,7 @@ function getPossibleNames(
 
 
 /* =========================================================
-   FIND CHARACTER IMAGE
+   FIND PORTRAIT
 ========================================================= */
 
 async function findCharacterImage(
@@ -475,12 +559,6 @@ async function findCharacterImage(
 
     const data =
       await loadGameData(
-        debug
-      );
-
-
-    const search =
-      await buildFuse(
         debug
       );
 
@@ -505,9 +583,12 @@ async function findCharacterImage(
     );
 
 
+    const search =
+      buildFuse(debug);
+
+
     let bestResult =
       null;
-
 
     let bestSearchName =
       null;
@@ -538,31 +619,31 @@ async function findCharacterImage(
       }
 
 
+      /*
+       * Показываем первые 3 кандидата.
+       * Это очень удобно для диагностики.
+       */
+
+      results
+        .slice(0, 3)
+        .forEach(
+          result => {
+
+            debug.push(
+              `  → ${result.item.name} | score: ${result.score}`
+            );
+
+          }
+        );
+
+
       const candidate =
         results[0];
 
 
-      const filename =
-        candidate.item.name;
-
-
-      const score =
-        candidate.score;
-
-
-      debug.push(
-        `  → ${filename}`
-      );
-
-
-      debug.push(
-        `  → score: ${score}`
-      );
-
-
       if (
         !bestResult ||
-        score <
+        candidate.score <
         bestResult.score
       ) {
 
@@ -593,7 +674,7 @@ async function findCharacterImage(
 
 
     const file =
-      bestResult.item.path;
+      bestResult.item.file;
 
 
     const score =
@@ -601,7 +682,12 @@ async function findCharacterImage(
 
 
     debug.push(
-      `Лучшее совпадение: ${file}`
+      `Лучшее совпадение: ${bestResult.item.name}`
+    );
+
+
+    debug.push(
+      `Файл: ${file}`
     );
 
 
@@ -611,9 +697,10 @@ async function findCharacterImage(
 
 
     /*
-     * Очень плохие совпадения
-     * отбрасываем.
+     * 0 = идеально.
+     * Чем ближе к 1 — тем хуже.
      */
+
     if (
       score !== undefined &&
       score > 0.50
@@ -630,8 +717,13 @@ async function findCharacterImage(
         debug,
 
         match: {
+          name:
+            bestResult.item.name,
+
           file,
+
           score,
+
           searchedName:
             bestSearchName
         }
@@ -640,17 +732,15 @@ async function findCharacterImage(
     }
 
 
-    const encodedPath =
-      file
-        .split("/")
-        .map(
-          encodeURIComponent
-        )
-        .join("/");
-
-
     const url =
-      `https://raw.githubusercontent.com/tools4swgoh/swgoh-icons/master/${encodedPath}`;
+      makePortraitUrl(
+        file
+      );
+
+
+    debug.push(
+      `URL: ${url}`
+    );
 
 
     debug.push(
@@ -756,7 +846,9 @@ const server =
         req.on(
           "data",
           chunk => {
+
             body += chunk;
+
           }
         );
 
@@ -862,7 +954,9 @@ const server =
         req.on(
           "data",
           chunk => {
+
             body += chunk;
+
           }
         );
 
