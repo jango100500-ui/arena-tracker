@@ -48,9 +48,13 @@
       cursor: pointer;
     }
 
+    #copyButton {
+      display: none;
+      margin-top: 5px;
+    }
+
     #status {
       margin-top: 15px;
-
       font-weight: bold;
     }
 
@@ -103,6 +107,13 @@
 
   <p id="status"></p>
 
+  <button
+    id="copyButton"
+    onclick="copyJSON()"
+  >
+    📋 Копировать JSON
+  </button>
+
   <pre id="result"></pre>
 
 
@@ -147,7 +158,15 @@
         document
           .getElementById("result");
 
+      const copyButton =
+        document
+          .getElementById("copyButton");
+
+
       result.textContent = "";
+
+      copyButton.style.display = "none";
+
 
       status.textContent =
         "Запрашиваю данные...";
@@ -202,6 +221,12 @@
         }
 
 
+        if (text) {
+          copyButton.style.display =
+            "inline-block";
+        }
+
+
       } catch (error) {
 
         status.textContent =
@@ -211,6 +236,60 @@
           error.toString();
 
         console.error(error);
+      }
+    }
+
+
+    async function copyJSON() {
+
+      const result =
+        document
+          .getElementById("result");
+
+      const status =
+        document
+          .getElementById("status");
+
+
+      if (!result.textContent) {
+        return;
+      }
+
+
+      try {
+
+        await navigator.clipboard.writeText(
+          result.textContent
+        );
+
+        status.textContent =
+          "JSON скопирован ✓";
+
+
+      } catch (error) {
+
+        // Запасной вариант
+        const textarea =
+          document.createElement("textarea");
+
+        textarea.value =
+          result.textContent;
+
+        document.body.appendChild(
+          textarea
+        );
+
+        textarea.select();
+
+        document.execCommand(
+          "copy"
+        );
+
+        textarea.remove();
+
+
+        status.textContent =
+          "JSON скопирован ✓";
       }
     }
 
