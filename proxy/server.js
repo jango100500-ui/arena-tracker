@@ -2,18 +2,11 @@ import http from "node:http";
 import { URL } from "node:url";
 import Fuse from "fuse.js";
 
-// ============================================================
-// CONFIG
-// ============================================================
-
 const PORT = process.env.PORT || 10000;
 
 const COMLINK_URL =
   process.env.COMLINK_URL ||
   "https://arena-tracker-2uod.onrender.com";
-
-const GAMEDATA_URL =
-  "https://raw.githubusercontent.com/swgoh-utils/gamedata/main";
 
 const ICONS_RAW_URL =
   "https://raw.githubusercontent.com/tools4swgoh/swgoh-icons/main";
@@ -21,25 +14,23 @@ const ICONS_RAW_URL =
 const ICONS_REPO_URL =
   "https://github.com/tools4swgoh/swgoh-icons/tree/main";
 
-// Cache
 const GAME_DATA_TTL = 60 * 60 * 1000;
 const PORTRAIT_TTL = 6 * 60 * 60 * 1000;
 
-let gameDataCache = null;
-let gameDataLoadedAt = 0;
+let unitsCache = null;
+let unitsLoadedAt = 0;
 
 let portraitCache = null;
 let portraitLoadedAt = 0;
 
 
 // ============================================================
-// HTTP HELPERS
+// HTTP
 // ============================================================
 
 async function fetchText(url, options = {}) {
   const response = await fetch(url, {
     ...options,
-
     headers: {
       "User-Agent": "arena-tracker/1.0",
       ...(options.headers || {})
@@ -65,131 +56,14 @@ async function fetchJson(url, options = {}) {
     return JSON.parse(text);
   } catch {
     throw new Error(
-      `Ожидался JSON, но пришло:\n${text.slice(0, 1000)}`
+      `Invalid JSON: ${text.slice(0, 1000)}`
     );
   }
 }
 
 
 // ============================================================
-// GAME DATA
-// ============================================================
-//
-// gamedata/units.json имеет структуру:
-//
-// {
-//   "version": "...",
-//   "data": [ ... ]
-// }
-//
-// Мы используем именно data.
-//
-// Это автоматический источник. Никаких ручных персонажей.
-// ============================================================
-
-async function loadGameData() {
-  const now = Date.now();
-
-  if (
-    gameDataCache &&
-    now - gameDataLoadedAt < GAME_DATA_TTL
-  ) {
-    return gameDataCache;
-  }
-
-  console.log("[GAMEDATA] loading units.json...");
-
-  const json = await fetchJson(
-    `${GAMEDATA_URL}/units.json`
-  );
-
-  let units = [];
-
-  if (Array.isArray(json)) {
-    units = json;
-  } else if (Array.isArray(json.data)) {
-    units = json.data;
-  } else if (
-    json.data &&
-    typeof json.data === "object"
-  ) {
-    units = Object.values(json.data);
-  }
-
-  if (!units.length) {
-    throw new Error(
-      "units.json загрузился, но массив units пуст"
-    );
-  }
-
-  const byBaseId = new Map();
-
-  const byId = new Map();
-
-  const byThumbnail = new Map();
-
-  for (const unit of units) {
-    if (!unit || typeof unit !== "object") {
-      continue;
-    }
-
-    const baseId =
-      unit.baseId ||
-      unit.baseID;
-
-    const id =
-      unit.id ||
-      unit.definitionId;
-
-    const thumbnailName =
-      unit.thumbnailName;
-
-    if (baseId) {
-      byBaseId.set(
-        String(baseId).toUpperCase(),
-        unit
-      );
-    }
-
-    if (id) {
-      byId.set(
-        String(id).toUpperCase(),
-        unit
-      );
-    }
-
-    if (thumbnailName) {
-      byThumbnail.set(
-        String(thumbnailName).toUpperCase(),
-        unit
-      );
-    }
-  }
-
-  gameDataCache = {
-    version: json.version || null,
-    units,
-    byBaseId,
-    byId,
-    byThumbnail
-  };
-
-  gameDataLoadedAt = now;
-
-  console.log(
-    `[GAMEDATA] loaded ${units.length} units`
-  );
-
-  console.log(
-    `[GAMEDATA] version: ${json.version || "unknown"}`
-  );
-
-  return gameDataCache;
-}
-
-
-// ============================================================
-// NORMALIZATION
+// NORMALIZE
 // ============================================================
 
 function normalizeText(value) {
@@ -208,24 +82,207 @@ function normalizeText(value) {
 }
 
 
+function getBaseId(definitionId) {
+  return String(definitionId || "")
+    .split(":")[0]
+    .trim()
+    .toUpperCase();
+}
+
+
 // ============================================================
-// PORTRAIT INDEX
-// ============================================================
-//
-// Репозиторий содержит реальные PNG.
-//
-// Например:
-//
-// Captain_Rex
-// CT-7567 "Rex"
-// Threepio & Chewie
-//
-// Мы НЕ пишем эти имена вручную.
-//
-// Список берём из GitHub.
+// COMLINK unitsList
 // ============================================================
 
-function decodeGithubFilename(filename) {
+async function loadUnits() {
+  const now = Date.now();
+
+  if (
+    unitsCache &&
+    now - unitsLoadedAt < GAME_DATA_TTL
+  ) {
+    return unitsCache;
+  }
+
+  console.log(
+    "[UNITS] Loading unitsList from Comlink..."
+  );
+
+  const payload = {
+    collection: "unitsList",
+    language: "ENG_US"
+  };
+
+  const response = await fetch(
+    `${COMLINK_URL}/data`,
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type":
+          "application/json",
+
+        "Accept":
+          "application/json"
+      },
+
+      body:
+        JSON.stringify(payload)
+    }
+  );
+
+  const text =
+    await response.text();
+
+  if (!response.ok) {
+    throw new Error(
+      `Comlink /data ${response.status}: ${text.slice(0, 2000)}`
+    );
+  }
+
+  let json;
+
+  try {
+    json =
+      JSON.parse(text);
+  } catch {
+    throw new Error(
+      `Comlink /data returned invalid JSON: ${text.slice(0, 2000)}`
+    );
+  }
+
+  console.log(
+    "[UNITS] Response keys:",
+    Object.keys(json)
+  );
+
+  let units = [];
+
+  /*
+   * Comlink versions могут отдавать
+   * коллекцию в разных формах.
+   */
+
+  if (Array.isArray(json)) {
+    units = json;
+  }
+
+  else if (Array.isArray(json.data)) {
+    units = json.data;
+  }
+
+  else if (
+    json.data &&
+    typeof json.data === "object"
+  ) {
+    units =
+      Object.values(json.data);
+  }
+
+  else if (
+    Array.isArray(json.unitsList)
+  ) {
+    units =
+      json.unitsList;
+  }
+
+  else if (
+    json.unitsList &&
+    typeof json.unitsList === "object"
+  ) {
+    units =
+      Object.values(json.unitsList);
+  }
+
+  if (!units.length) {
+    console.log(
+      "[UNITS] Unexpected response:"
+    );
+
+    console.log(
+      JSON.stringify(json).slice(0, 5000)
+    );
+
+    throw new Error(
+      "Comlink /data не вернул unitsList"
+    );
+  }
+
+  const byBaseId =
+    new Map();
+
+  const byId =
+    new Map();
+
+  const byThumbnail =
+    new Map();
+
+  for (const unit of units) {
+    if (
+      !unit ||
+      typeof unit !== "object"
+    ) {
+      continue;
+    }
+
+    if (unit.baseId) {
+      byBaseId.set(
+        String(
+          unit.baseId
+        ).toUpperCase(),
+        unit
+      );
+    }
+
+    if (unit.id) {
+      byId.set(
+        String(
+          unit.id
+        ).toUpperCase(),
+        unit
+      );
+    }
+
+    if (unit.thumbnailName) {
+      byThumbnail.set(
+        String(
+          unit.thumbnailName
+        ).toUpperCase(),
+        unit
+      );
+    }
+  }
+
+  unitsCache = {
+    units,
+    byBaseId,
+    byId,
+    byThumbnail
+  };
+
+  unitsLoadedAt = now;
+
+  console.log(
+    `[UNITS] Loaded ${units.length} units`
+  );
+
+  console.log(
+    `[UNITS] baseIds: ${byBaseId.size}`
+  );
+
+  console.log(
+    `[UNITS] thumbnails: ${byThumbnail.size}`
+  );
+
+  return unitsCache;
+}
+
+
+// ============================================================
+// PORTRAITS
+// ============================================================
+
+function decodeFilename(filename) {
   try {
     return decodeURIComponent(filename);
   } catch {
@@ -234,37 +291,32 @@ function decodeGithubFilename(filename) {
 }
 
 
-function getPortraitDisplayName(filename) {
-  let name = filename;
+function getPortraitName(filename) {
+  let name =
+    filename
+      .replace(
+        /^65px-Unit-Character-/i,
+        ""
+      )
+      .replace(
+        /-portrait\.png$/i,
+        ""
+      );
 
-  name = name.replace(
-    /^65px-Unit-Character-/i,
-    ""
-  );
+  name =
+    decodeFilename(name);
 
-  name = name.replace(
-    /-portrait\.png$/i,
-    ""
-  );
-
-  name = decodeGithubFilename(name);
-
-  name = name.replace(/_/g, " ");
+  name =
+    name.replace(
+      /_/g,
+      " "
+    );
 
   return name;
 }
 
 
-function isCharacterPortrait(filename) {
-  return /^65px-Unit-Character-.+-portrait\.png$/i.test(
-    filename
-  );
-}
-
-
 function makePortraitUrl(filename) {
-  // encodeURI сохраняет / и кодирует пробелы,
-  // но не ломает всю строку целиком.
   return (
     `${ICONS_RAW_URL}/` +
     encodeURI(filename)
@@ -272,7 +324,7 @@ function makePortraitUrl(filename) {
 }
 
 
-async function loadPortraitIndex() {
+async function loadPortraits() {
   const now = Date.now();
 
   if (
@@ -282,64 +334,79 @@ async function loadPortraitIndex() {
     return portraitCache;
   }
 
-  console.log("[PORTRAITS] downloading GitHub index...");
-
-  const html = await fetchText(
-    ICONS_REPO_URL
+  console.log(
+    "[PORTRAITS] Loading GitHub portrait list..."
   );
 
-  const files = new Set();
+  const html =
+    await fetchText(
+      ICONS_REPO_URL
+    );
 
-  // Ищем PNG непосредственно в HTML GitHub.
-  //
-  // Не используем GitHub API:
-  // оно у Render уже отдавало 403.
+  const files =
+    new Set();
+
   const regex =
     /65px-Unit-Character-[^"'<>]+?-portrait\.png/gi;
 
-  for (const match of html.matchAll(regex)) {
+  for (
+    const match of html.matchAll(regex)
+  ) {
     const filename =
-      decodeGithubFilename(match[0]);
+      decodeFilename(
+        match[0]
+      );
 
-    if (
-      isCharacterPortrait(filename)
-    ) {
-      files.add(filename);
-    }
+    files.add(
+      filename
+    );
   }
 
-  const portraits = [...files]
-    .map((filename) => {
-      const displayName =
-        getPortraitDisplayName(filename);
+  const portraits =
+    [...files]
+      .map(
+        (filename) => {
+          const name =
+            getPortraitName(
+              filename
+            );
 
-      return {
-        filename,
-        displayName,
+          return {
+            filename,
 
-        normalizedName:
-          normalizeText(displayName),
+            name,
 
-        url:
-          makePortraitUrl(filename)
-      };
-    })
-    .filter(
-      (portrait) =>
-        portrait.normalizedName.length > 0
-    );
+            normalized:
+              normalizeText(
+                name
+              ),
+
+            url:
+              makePortraitUrl(
+                filename
+              )
+          };
+        }
+      )
+      .filter(
+        (x) =>
+          x.normalized
+      );
 
   if (!portraits.length) {
     throw new Error(
-      "GitHub index не содержит character portraits"
+      "Не найдено ни одного character portrait"
     );
   }
 
-  portraitCache = portraits;
-  portraitLoadedAt = now;
+  portraitCache =
+    portraits;
+
+  portraitLoadedAt =
+    now;
 
   console.log(
-    `[PORTRAITS] indexed ${portraits.length} portraits`
+    `[PORTRAITS] Loaded ${portraits.length} portraits`
   );
 
   return portraits;
@@ -350,35 +417,38 @@ async function loadPortraitIndex() {
 // FIND UNIT
 // ============================================================
 
-function getBaseId(definitionId) {
-  return String(definitionId || "")
-    .split(":")[0]
-    .trim()
-    .toUpperCase();
-}
+function findUnit(
+  units,
+  definitionId
+) {
+  const baseId =
+    getBaseId(
+      definitionId
+    );
 
-
-function findUnit(gameData, definitionId) {
-  const cleanDefinitionId =
-    String(definitionId || "")
+  const fullId =
+    String(
+      definitionId
+    )
       .trim()
       .toUpperCase();
 
-  const baseId =
-    getBaseId(cleanDefinitionId);
+  /*
+   * Сначала полный ID.
+   */
 
-  // Самый точный вариант:
-  // например CAPTAINREX:SEVEN_STAR
   let unit =
-    gameData.byId.get(
-      cleanDefinitionId
+    units.byId.get(
+      fullId
     );
 
-  // Обычно units.json содержит id,
-  // но если нет — используем baseId.
+  /*
+   * Потом baseId.
+   */
+
   if (!unit) {
     unit =
-      gameData.byBaseId.get(
+      units.byBaseId.get(
         baseId
       );
   }
@@ -388,115 +458,158 @@ function findUnit(gameData, definitionId) {
 
 
 // ============================================================
-// UNIT NAME CANDIDATES
+// BUILD SEARCH CANDIDATES
 // ============================================================
 
-function getUnitNames(unit, baseId) {
-  const names = [];
+function getCandidates(
+  unit,
+  baseId
+) {
+  const result =
+    [];
 
   if (unit) {
-    // В units.json nameKey обычно уже
-    // человекочитаемое имя.
-    if (unit.nameKey) {
-      names.push(
-        String(unit.nameKey)
+
+    if (unit.baseId) {
+      result.push(
+        String(
+          unit.baseId
+        )
       );
     }
 
-    if (unit.baseId) {
-      names.push(
-        String(unit.baseId)
+    if (unit.nameKey) {
+      result.push(
+        String(
+          unit.nameKey
+        )
       );
     }
 
     if (unit.thumbnailName) {
-      names.push(
-        String(unit.thumbnailName)
+      result.push(
+        String(
+          unit.thumbnailName
+        )
       );
     }
 
     if (unit.id) {
-      names.push(
-        String(unit.id)
+      result.push(
+        String(
+          unit.id
+        )
       );
     }
   }
 
-  // baseId всегда оставляем как fallback.
-  if (baseId) {
-    names.push(baseId);
-  }
+  result.push(
+    baseId
+  );
 
   return [
     ...new Set(
-      names
+      result
         .filter(Boolean)
-        .map(String)
     )
   ];
 }
 
 
 // ============================================================
-// EXACT PORTRAIT MATCHING
+// SPECIAL THUMBNAIL NORMALIZATION
 // ============================================================
 
-function exactPortraitMatch(
-  portraits,
-  names
+function normalizeThumbnail(
+  value
 ) {
-  const normalizedNames =
-    names
-      .map(normalizeText)
+  return normalizeText(
+    String(
+      value || ""
+    )
+      .replace(
+        /^tex\.charui\./i,
+        ""
+      )
+      .replace(
+        /^charui\./i,
+        ""
+      )
+  );
+}
+
+
+// ============================================================
+// EXACT MATCH
+// ============================================================
+
+function exactMatch(
+  portraits,
+  unit,
+  candidates
+) {
+  /*
+   * thumbnailName — самый важный источник.
+   */
+
+  if (
+    unit &&
+    unit.thumbnailName
+  ) {
+    const thumbnail =
+      normalizeThumbnail(
+        unit.thumbnailName
+      );
+
+    for (
+      const portrait of portraits
+    ) {
+      const portraitName =
+        normalizeText(
+          portrait.name
+        );
+
+      if (
+        portraitName ===
+        thumbnail
+      ) {
+        return {
+          portrait,
+          method:
+            "thumbnail-exact",
+          score:
+            1000
+        };
+      }
+    }
+  }
+
+  /*
+   * Затем nameKey / baseId.
+   */
+
+  const normalizedCandidates =
+    candidates
+      .map(
+        normalizeText
+      )
       .filter(Boolean);
 
-  // ----------------------------------------------------------
-  // 1. Полное совпадение имени
-  // ----------------------------------------------------------
-
-  for (const portrait of portraits) {
+  for (
+    const portrait of portraits
+  ) {
     if (
-      normalizedNames.includes(
-        portrait.normalizedName
+      normalizedCandidates.includes(
+        portrait.normalized
       )
     ) {
       return {
         portrait,
-        method: "exact-name",
-        score: 1000
+        method:
+          "name-exact",
+        score:
+          900
       };
-    }
-  }
-
-  // ----------------------------------------------------------
-  // 2. thumbnailName
-  //
-  // Например:
-  // tex.charui_captainrex
-  //
-  // → captain rex
-  // ----------------------------------------------------------
-
-  for (const name of normalizedNames) {
-    const compact =
-      name
-        .replace(/^tex charui /, "")
-        .trim();
-
-    if (!compact) {
-      continue;
-    }
-
-    for (const portrait of portraits) {
-      if (
-        portrait.normalizedName === compact
-      ) {
-        return {
-          portrait,
-          method: "exact-thumbnail",
-          score: 950
-        };
-      }
     }
   }
 
@@ -507,17 +620,10 @@ function exactPortraitMatch(
 // ============================================================
 // FUZZY FALLBACK
 // ============================================================
-//
-// Это ТОЛЬКО fallback.
-//
-// Основной путь выше — exact.
-// Поэтому Rex / CT-7567 Rex больше не должны
-// случайно меняться местами.
-// ============================================================
 
-function fuzzyPortraitMatch(
+function fuzzyMatch(
   portraits,
-  names
+  candidates
 ) {
   const fuse =
     new Fuse(
@@ -525,64 +631,78 @@ function fuzzyPortraitMatch(
       {
         keys: [
           {
-            name: "normalizedName",
+            name:
+              "normalized",
             weight: 1
           },
+
           {
-            name: "displayName",
+            name:
+              "name",
             weight: 0.5
           }
         ],
 
-        threshold: 0.20,
+        threshold:
+          0.18,
 
-        distance: 100,
+        distance:
+          100,
 
-        ignoreLocation: true,
+        ignoreLocation:
+          true,
 
-        includeScore: true,
-
-        minMatchCharLength: 3
+        includeScore:
+          true
       }
     );
 
-  const candidates = [];
+  const results =
+    [];
 
-  for (const name of names) {
-    const normalized =
-      normalizeText(name);
+  for (
+    const candidate of candidates
+  ) {
+    const query =
+      normalizeText(
+        candidate
+      );
 
-    if (!normalized) {
+    if (!query) {
       continue;
     }
 
-    const results =
-      fuse.search(normalized);
+    const found =
+      fuse.search(
+        query
+      );
 
-    for (const result of results) {
-      candidates.push({
+    for (
+      const result of found
+    ) {
+      results.push({
         ...result,
-        query: name
+        query
       });
     }
   }
 
-  if (!candidates.length) {
+  if (!results.length) {
     return null;
   }
 
-  candidates.sort(
+  results.sort(
     (a, b) =>
       (a.score ?? 1) -
       (b.score ?? 1)
   );
 
-  return candidates[0];
+  return results[0];
 }
 
 
 // ============================================================
-// CHARACTER IMAGE
+// MAIN IMAGE RESOLVER
 // ============================================================
 
 async function findCharacterImage(
@@ -592,16 +712,17 @@ async function findCharacterImage(
     Date.now();
 
   const definitionId =
-    String(unitDefId || "")
-      .trim();
+    String(
+      unitDefId || ""
+    ).trim();
 
   if (!definitionId) {
     return {
       image: null,
 
       debug: {
-        method: "error",
-        error: "unitDefId is empty"
+        method:
+          "empty-id"
       }
     };
   }
@@ -611,58 +732,73 @@ async function findCharacterImage(
       definitionId
     );
 
-  const gameData =
-    await loadGameData();
+  const units =
+    await loadUnits();
 
   const portraits =
-    await loadPortraitIndex();
+    await loadPortraits();
 
   const unit =
     findUnit(
-      gameData,
+      units,
       definitionId
     );
 
-  const names =
-    getUnitNames(
+  const candidates =
+    getCandidates(
       unit,
       baseId
     );
+
+  console.log(
+    "----------------------------------------"
+  );
 
   console.log(
     `[PORTRAIT] ${definitionId}`
   );
 
   console.log(
-    `[PORTRAIT] baseId = ${baseId}`
+    `[PORTRAIT] baseId: ${baseId}`
   );
 
   console.log(
-    `[PORTRAIT] unit =`,
+    "[PORTRAIT] unit:",
     unit
       ? {
-          id: unit.id,
-          baseId: unit.baseId,
-          nameKey: unit.nameKey,
+          id:
+            unit.id ||
+            null,
+
+          baseId:
+            unit.baseId ||
+            null,
+
+          nameKey:
+            unit.nameKey ||
+            null,
+
           thumbnailName:
-            unit.thumbnailName
+            unit.thumbnailName ||
+            null
         }
       : "NOT FOUND"
   );
 
   console.log(
-    `[PORTRAIT] candidates =`,
-    names
+    "[PORTRAIT] candidates:",
+    candidates
   );
 
-  // ----------------------------------------------------------
-  // EXACT
-  // ----------------------------------------------------------
+  /*
+   * EXACT
+   */
 
   const exact =
-    exactPortraitMatch(
+    exactMatch(
       portraits,
-      names
+      unit,
+      candidates
     );
 
   if (exact) {
@@ -675,7 +811,7 @@ async function findCharacterImage(
         exact.portrait.url,
 
       match:
-        exact.portrait.displayName,
+        exact.portrait.name,
 
       debug: {
         method:
@@ -691,38 +827,47 @@ async function findCharacterImage(
         unitFound:
           !!unit,
 
-        unit: unit
-          ? {
-              id: unit.id || null,
-              baseId:
-                unit.baseId || null,
-              nameKey:
-                unit.nameKey || null,
-              thumbnailName:
-                unit.thumbnailName || null
-            }
-          : null,
+        unit:
+          unit
+            ? {
+                id:
+                  unit.id ||
+                  null,
 
-        candidates:
-          names,
+                baseId:
+                  unit.baseId ||
+                  null,
+
+                nameKey:
+                  unit.nameKey ||
+                  null,
+
+                thumbnailName:
+                  unit.thumbnailName ||
+                  null
+              }
+            : null,
+
+        candidates,
 
         portrait:
           exact.portrait.filename,
 
         elapsedMs:
-          Date.now() - started
+          Date.now() -
+          started
       }
     };
   }
 
-  // ----------------------------------------------------------
-  // FUZZY FALLBACK
-  // ----------------------------------------------------------
+  /*
+   * FUZZY
+   */
 
   const fuzzy =
-    fuzzyPortraitMatch(
+    fuzzyMatch(
       portraits,
-      names
+      candidates
     );
 
   if (fuzzy) {
@@ -735,7 +880,7 @@ async function findCharacterImage(
         fuzzy.item.url,
 
       match:
-        fuzzy.item.displayName,
+        fuzzy.item.name,
 
       debug: {
         method:
@@ -754,33 +899,42 @@ async function findCharacterImage(
         unitFound:
           !!unit,
 
-        unit: unit
-          ? {
-              id: unit.id || null,
-              baseId:
-                unit.baseId || null,
-              nameKey:
-                unit.nameKey || null,
-              thumbnailName:
-                unit.thumbnailName || null
-            }
-          : null,
+        unit:
+          unit
+            ? {
+                id:
+                  unit.id ||
+                  null,
 
-        candidates:
-          names,
+                baseId:
+                  unit.baseId ||
+                  null,
+
+                nameKey:
+                  unit.nameKey ||
+                  null,
+
+                thumbnailName:
+                  unit.thumbnailName ||
+                  null
+              }
+            : null,
+
+        candidates,
 
         portrait:
           fuzzy.item.filename,
 
         elapsedMs:
-          Date.now() - started
+          Date.now() -
+          started
       }
     };
   }
 
-  // ----------------------------------------------------------
-  // NOT FOUND
-  // ----------------------------------------------------------
+  /*
+   * NOT FOUND
+   */
 
   console.log(
     `[PORTRAIT] NOT FOUND ✗ ${definitionId}`
@@ -802,51 +956,58 @@ async function findCharacterImage(
       unitFound:
         !!unit,
 
-      unit: unit
-        ? {
-            id: unit.id || null,
-            baseId:
-              unit.baseId || null,
-            nameKey:
-              unit.nameKey || null,
-            thumbnailName:
-              unit.thumbnailName || null
-          }
-        : null,
+      unit:
+        unit
+          ? {
+              id:
+                unit.id ||
+                null,
 
-      candidates:
-        names,
+              baseId:
+                unit.baseId ||
+                null,
+
+              nameKey:
+                unit.nameKey ||
+                null,
+
+              thumbnailName:
+                unit.thumbnailName ||
+                null
+            }
+          : null,
+
+      candidates,
 
       portraitsAvailable:
         portraits.length,
 
       elapsedMs:
-        Date.now() - started
+        Date.now() -
+        started
     }
   };
 }
 
 
 // ============================================================
-// COMLINK
+// COMLINK PROXY
 // ============================================================
 
 async function proxyToComlink(
   path,
   body
 ) {
-  const url =
-    `${COMLINK_URL}${path}`;
-
   console.log(
     `[COMLINK] POST ${path}`
   );
 
   const response =
     await fetch(
-      url,
+      `${COMLINK_URL}${path}`,
       {
-        method: "POST",
+        method:
+          "POST",
 
         headers: {
           "Content-Type":
@@ -881,61 +1042,7 @@ async function proxyToComlink(
 
 
 // ============================================================
-// COMLINK GAME DATA DEBUG
-// ============================================================
-//
-// Оставляем endpoint, чтобы можно было проверить,
-// что units.json реально загружается.
-// ============================================================
-
-async function getGameDataStatus() {
-  const data =
-    await loadGameData();
-
-  return {
-    ok: true,
-
-    version:
-      data.version,
-
-    units:
-      data.units.length,
-
-    baseIds:
-      data.byBaseId.size,
-
-    ids:
-      data.byId.size,
-
-    thumbnails:
-      data.byThumbnail.size,
-
-    cacheAge:
-      Date.now() -
-      gameDataLoadedAt
-  };
-}
-
-
-async function getPortraitStatus() {
-  const portraits =
-    await loadPortraitIndex();
-
-  return {
-    ok: true,
-
-    portraits:
-      portraits.length,
-
-    cacheAge:
-      Date.now() -
-      portraitLoadedAt
-  };
-}
-
-
-// ============================================================
-// REQUEST BODY
+// BODY
 // ============================================================
 
 function readBody(req) {
@@ -995,7 +1102,7 @@ function readBody(req) {
 
 
 // ============================================================
-// RESPONSE
+// RESPONSES
 // ============================================================
 
 function sendJson(
@@ -1003,9 +1110,6 @@ function sendJson(
   status,
   data
 ) {
-  const payload =
-    JSON.stringify(data);
-
   res.writeHead(
     status,
     {
@@ -1026,7 +1130,9 @@ function sendJson(
     }
   );
 
-  res.end(payload);
+  res.end(
+    JSON.stringify(data)
+  );
 }
 
 
@@ -1056,11 +1162,14 @@ function sendText(
 
 const server =
   http.createServer(
-    async (req, res) => {
+    async (
+      req,
+      res
+    ) => {
       try {
 
         // ------------------------------------------------------
-        // CORS PREFLIGHT
+        // OPTIONS
         // ------------------------------------------------------
 
         if (
@@ -1117,7 +1226,8 @@ const server =
         // ------------------------------------------------------
 
         if (
-          url.pathname === "/health" &&
+          url.pathname ===
+            "/health" &&
           req.method === "GET"
         ) {
           sendJson(
@@ -1132,8 +1242,8 @@ const server =
               comlink:
                 COMLINK_URL,
 
-              gameDataLoaded:
-                !!gameDataCache,
+              unitsLoaded:
+                !!unitsCache,
 
               portraitsLoaded:
                 !!portraitCache
@@ -1154,13 +1264,28 @@ const server =
           req.method === "GET"
         ) {
           try {
-            const status =
-              await getGameDataStatus();
+            const units =
+              await loadUnits();
 
             sendJson(
               res,
               200,
-              status
+              {
+                ok: true,
+
+                units:
+                  units.units.length,
+
+                baseIds:
+                  units.byBaseId.size,
+
+                thumbnails:
+                  units.byThumbnail.size,
+
+                cacheAge:
+                  Date.now() -
+                  unitsLoadedAt
+              }
             );
           } catch (error) {
             sendJson(
@@ -1192,13 +1317,22 @@ const server =
           req.method === "GET"
         ) {
           try {
-            const status =
-              await getPortraitStatus();
+            const portraits =
+              await loadPortraits();
 
             sendJson(
               res,
               200,
-              status
+              {
+                ok: true,
+
+                portraits:
+                  portraits.length,
+
+                cacheAge:
+                  Date.now() -
+                  portraitLoadedAt
+              }
             );
           } catch (error) {
             sendJson(
@@ -1248,6 +1382,7 @@ const server =
               200,
               {
                 unitDefId,
+
                 ...result
               }
             );
@@ -1387,19 +1522,19 @@ server.listen(
     );
 
     console.log(
-      `Port: ${PORT}`
+      `PORT: ${PORT}`
     );
 
     console.log(
-      `Comlink: ${COMLINK_URL}`
+      `COMLINK: ${COMLINK_URL}`
     );
 
     console.log(
-      "Game data: swgoh-utils/gamedata"
+      "UNITS: Comlink /data → unitsList"
     );
 
     console.log(
-      "Portraits: tools4swgoh/swgoh-icons"
+      "PORTRAITS: tools4swgoh/swgoh-icons"
     );
 
     console.log(
