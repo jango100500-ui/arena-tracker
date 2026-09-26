@@ -1,25 +1,73 @@
 <!DOCTYPE html>
-
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>SWGOH Comlink Test</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+      color: #222;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      max-width: 300px;
+      box-sizing: border-box;
+      padding: 12px;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 12px 18px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    #result {
+      margin-top: 15px;
+      padding: 15px;
+      background: #111;
+      color: #eee;
+      border-radius: 8px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
 </head>
+
 <body>
 
   <h1>SWGOH Comlink Test</h1>
 
-<input
-id="allyCode"
-type="text"
-inputmode="numeric"
-maxlength="9"
-placeholder="Ally Code"
+  <input
+    id="allyCode"
+    type="text"
+    inputmode="numeric"
+    maxlength="9"
+    placeholder="Ally Code"
+  >
 
->
+  <br>
 
-<button onclick="getData()">Получить данные</button>
+  <button onclick="getData()">
+    Получить данные
+  </button>
 
   <p id="status"></p>
 
@@ -27,27 +75,40 @@ placeholder="Ally Code"
 
   <script>
     async function getData() {
-      const allyCode = document.getElementById("allyCode").value.trim();
-      const status = document.getElementById("status");
-      const result = document.getElementById("result");
+      const allyCode =
+        document.getElementById("allyCode").value.trim();
 
+      const status =
+        document.getElementById("status");
+
+      const result =
+        document.getElementById("result");
+
+      // Очищаем предыдущий результат
       result.textContent = "";
 
+      // Проверяем Ally Code
       if (!/^[1-9]{9}$/.test(allyCode)) {
-        status.textContent = "Введите 9 цифр Ally Code.";
+        status.textContent =
+          "Введите 9 цифр Ally Code без дефисов.";
+
         return;
       }
 
-      status.textContent = "Запрашиваю данные...";
+      status.textContent =
+        "Запрашиваю данные...";
 
       try {
+
         const response = await fetch(
-          "https://arena-tracker-2uod.onrender.com/playerArena",
+          "https://arena-tracker-proxy.onrender.com/playerArena",
           {
             method: "POST",
+
             headers: {
               "Content-Type": "application/json"
             },
+
             body: JSON.stringify({
               payload: {
                 allyCode: allyCode
@@ -61,18 +122,29 @@ placeholder="Ally Code"
         status.textContent =
           "HTTP " + response.status;
 
+        // Пытаемся разобрать JSON
         try {
+
           const json = JSON.parse(text);
 
           result.textContent =
             JSON.stringify(json, null, 2);
+
         } catch {
+
+          // Если сервер вернул не JSON
           result.textContent = text;
         }
 
       } catch (error) {
-        status.textContent = "Ошибка запроса";
-        result.textContent = error.toString();
+
+        status.textContent =
+          "Ошибка запроса";
+
+        result.textContent =
+          error.toString();
+
+        console.error(error);
       }
     }
   </script>
