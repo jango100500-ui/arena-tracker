@@ -1,27 +1,46 @@
 import http from "http";
+import Fuse from "fuse.js";
 
 const PORT = process.env.PORT || 10000;
 
 const COMLINK_URL =
   "https://arena-tracker-2uod.onrender.com";
 
-const ICONS_REPO =
+const ICONS_API =
   "https://api.github.com/repos/tools4swgoh/swgoh-icons/git/trees/master?recursive=1";
+
+const GAMEDATA_URL =
+  "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/gameDataItems.json";
+
 
 const ALLOWED_ROUTES = {
   "/playerArena": "/playerArena",
   "/player": "/player"
 };
 
+
 let iconFiles = null;
+let fuse = null;
+let gameData = null;
 
 
-/*
- * Получаем список всех файлов с иконками.
- *
- * Он загружается один раз после запуска proxy,
- * а не при каждом запросе пользователя.
- */
+/* =========================================================
+   NORMALIZE
+========================================================= */
+
+function normalize(text) {
+
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9а-яё]/gi, "");
+
+}
+
+
+/* =========================================================
+   LOAD ICONS
+========================================================= */
+
 async function loadIconFiles() {
 
   if (iconFiles) {
@@ -30,130 +49,266 @@ async function loadIconFiles() {
 
   console.log("Loading SWGOH icon list...");
 
-  const response = await fetch(ICONS_REPO, {
-    headers: {
-      "User-Agent": "arena-tracker"
-    }
-  });
+
+  const response =
+    await fetch(ICONS_API, {
+      headers: {
+        "User-Agent":
+          "arena-tracker"
+      }
+    });
+
 
   if (!response.ok) {
+
     throw new Error(
-      `Cannot load icon repository: HTTP ${response.status}`
+      `Icon API HTTP ${response.status}`
     );
+
   }
 
-  const data = await response.json();
 
-  iconFiles = data.tree
-    .filter(file =>
-      file.type === "blob" &&
-      file.path.toLowerCase().endsWith(".png")
-    )
-    .map(file => file.path);
+  const data =
+    await response.json();
+
+
+  iconFiles =
+    data.tree
+      .filter(file =>
+        file.type === "blob" &&
+        file.path
+          .toLowerCase()
+          .endsWith(".png")
+      )
+      .map(file => file.path);
+
 
   console.log(
-    `Loaded ${iconFiles.length} icon files`
+    `Loaded ${iconFiles.length} PNG files`
   );
 
+
   return iconFiles;
-}
-
-
-/*
- * Нормализуем текст:
- *
- * Captain Rex
- * Captain_Rex
- * CAPTAINREX
- *
- * превращаются примерно в одну форму.
- */
-function normalize(text) {
-
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
 
 }
 
 
-/*
- * Пока здесь небольшой intelligent mapping
- * для тестовых персонажей.
- *
- * В дальнейшем перенесём mapping в полноценный
- * game-data слой, чтобы покрыть весь ростер.
- */
-const KNOWN_NAMES = {
+/* =========================================================
+   LOAD GAMEDATA
+========================================================= */
 
-  GLLEIA:
-    "Princess_Leia",
+async function loadGameData() {
 
-  CAPTAINDROGAN:
-    "Captain_Drogan",
-
-  R2D2_LEGENDARY:
-    "R2-D2",
-
-  CAPTAINREX:
-    "Captain_Rex",
-
-  C3POCHEWBACCA:
-    "C-3PO"
-
-};
-
-
-/*
- * Ищем подходящий файл.
- */
-async function findCharacterImage(unitDefId) {
-
-  const baseId =
-    unitDefId
-      ?.split(":")[0]
-      ?.toUpperCase();
-
-  if (!baseId) {
-    return null;
+  if (gameData) {
+    return gameData;
   }
+
+
+  console.log(
+    "Loading SWGOH gamedata..."
+  );
+
+
+  const response =
+    await fetch(GAMEDATA_URL);
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      `Gamedata HTTP ${response.status}`
+    );
+
+  }
+
+
+  gameData =
+    await response.json();
+
+
+  console.log(
+    "Gamedata loaded"
+  );
+
+
+  return gameData;
+
+}
+
+
+/* =========================================================
+   BUILD FUSE INDEX
+========================================================= */
+
+async function buildFuseIndex() {
+
+  if (fuse) {
+    return fuse;
+  }
+
 
   const files =
     await loadIconFiles();
 
 
   /*
-   * Сначала используем известное имя.
+   * Нам нужны именно character portraits.
+   *
+   * Это сильно уменьшает количество мусора
+   * для fuzzy search.
    */
-  if (KNOWN_NAMES[baseId]) {
+  const characterFiles =
+    files.filter(file => {
 
-    const target =
-      normalize(KNOWN_NAMES[baseId]);
+      const lower =
+        file.toLowerCase();
+
+      return (
+        lower.includes("character") &&
+        lower.includes("portrait")
+      );
+
+    });
+
+
+  console.log(
+    `Character portraits: ${characterFiles.length}`
+  );
+
+
+  const documents =
+    characterFiles.map(file => ({
+
+      path: file,
+
+      name:
+        file
+          .split("/")
+          .pop()
+          .replace(
+            /\.png$/i,
+            ""
+          )
+
+    }));
+
+
+  fuse =
+    new Fuse(
+      documents,
+      {
+
+        keys: [
+          {
+            name: "name",
+            weight: 1
+          }
+        ],
+
+        includeScore: true,
+
+        threshold: 0.55,
+
+        ignoreLocation: true,
+
+        minMatchCharLength: 3
+
+      }
+    );
+
+
+  return fuse;
+
+}
+
+
+/* =========================================================
+   FIND UNIT IN GAMEDATA
+========================================================= */
+
+function findUnitDefinition(unitDefId) {
+
+  const data =
+    gameData;
+
+
+  if (!data) {
+    return null;
+  }
+
+
+  const baseId =
+    unitDefId
+      ?.split(":")[0];
+
+
+  if (!baseId) {
+    return null;
+  }
+
+
+  /*
+   * В gameDataItems.json структура может
+   * отличаться между версиями.
+   *
+   * Поэтому пробуем несколько распространённых
+   * вариантов.
+   */
+
+  const collections = [];
+
+
+  if (
+    Array.isArray(
+      data.UnitDefinitions
+    )
+  ) {
+
+    collections.push(
+      data.UnitDefinitions
+    );
+
+  }
+
+
+  if (
+    Array.isArray(
+      data.unitDefinitions
+    )
+  ) {
+
+    collections.push(
+      data.unitDefinitions
+    );
+
+  }
+
+
+  for (
+    const collection
+    of collections
+  ) {
 
     const found =
-      files.find(file => {
+      collection.find(unit => {
 
-        const filename =
-          file
-            .split("/")
-            .pop()
-            .replace(/\.png$/i, "");
+        const id =
+          unit.id ||
+          unit.unitId ||
+          unit.defId ||
+          unit.baseId;
 
-        return normalize(filename)
-          .includes(target);
+
+        return (
+          id === baseId ||
+          id === unitDefId
+        );
 
       });
 
+
     if (found) {
-
-      return {
-        url:
-          `https://raw.githubusercontent.com/tools4swgoh/swgoh-icons/master/${encodeURI(found)}`,
-
-        file:
-          found
-      };
-
+      return found;
     }
 
   }
@@ -164,226 +319,517 @@ async function findCharacterImage(unitDefId) {
 }
 
 
-/*
- * HTTP server
- */
-const server =
-  http.createServer(async (req, res) => {
+/* =========================================================
+   EXTRACT POSSIBLE NAMES
+========================================================= */
 
-    res.setHeader(
-      "Access-Control-Allow-Origin",
-      "*"
+function getPossibleNames(
+  unitDefId,
+  definition
+) {
+
+  const names = [];
+
+
+  /*
+   * Сам ID.
+   */
+  const baseId =
+    unitDefId
+      ?.split(":")[0];
+
+
+  if (baseId) {
+    names.push(baseId);
+  }
+
+
+  if (!definition) {
+    return names;
+  }
+
+
+  /*
+   * Пробуем различные поля
+   * из разных версий gamedata.
+   */
+
+  const possibleFields = [
+
+    "name",
+
+    "displayName",
+
+    "characterName",
+
+    "localizedName",
+
+    "unitName",
+
+    "shortName",
+
+    "baseName"
+
+  ];
+
+
+  for (
+    const field
+    of possibleFields
+  ) {
+
+    const value =
+      definition[field];
+
+
+    if (
+      typeof value ===
+      "string" &&
+      value.length > 1
+    ) {
+
+      names.push(value);
+
+    }
+
+  }
+
+
+  /*
+   * Иногда название лежит глубже.
+   */
+  if (
+    definition.nameKey
+  ) {
+
+    names.push(
+      definition.nameKey
     );
 
-    res.setHeader(
-      "Access-Control-Allow-Methods",
-      "POST, OPTIONS"
+  }
+
+
+  return [
+    ...new Set(names)
+  ];
+
+}
+
+
+/* =========================================================
+   FUZZY SEARCH
+========================================================= */
+
+async function findCharacterImage(
+  unitDefId
+) {
+
+  const database =
+    await loadGameData();
+
+
+  const search =
+    await buildFuseIndex();
+
+
+  const definition =
+    findUnitDefinition(
+      unitDefId
     );
 
-    res.setHeader(
-      "Access-Control-Allow-Headers",
-      "Content-Type"
+
+  const names =
+    getPossibleNames(
+      unitDefId,
+      definition
     );
 
 
-    if (req.method === "OPTIONS") {
+  console.log(
+    "Searching image for:",
+    unitDefId
+  );
 
-      res.writeHead(204);
-      res.end();
 
-      return;
+  console.log(
+    "Possible names:",
+    names
+  );
+
+
+  let bestResult =
+    null;
+
+
+  /*
+   * Пробуем каждое известное имя.
+   */
+  for (
+    const name
+    of names
+  ) {
+
+    const results =
+      search.search(name);
+
+
+    if (!results.length) {
+      continue;
     }
 
 
-    /*
-     * Новый endpoint:
-     *
-     * POST /characterImage
-     *
-     * body:
-     * {
-     *   "unitDefId": "CAPTAINREX:SEVEN_STAR"
-     * }
-     */
+    const candidate =
+      results[0];
+
+
     if (
-      req.method === "POST" &&
-      req.url === "/characterImage"
+      !bestResult ||
+      candidate.score <
+      bestResult.score
     ) {
 
-      try {
+      bestResult = {
 
-        let body = "";
+        result:
+          candidate,
 
-        req.on(
-          "data",
-          chunk => {
-            body += chunk;
-          }
-        );
+        searchedName:
+          name
 
+      };
 
-        req.on(
-          "end",
-          async () => {
+    }
 
-            const data =
-              JSON.parse(body);
+  }
 
 
-            const image =
-              await findCharacterImage(
-                data.unitDefId
-              );
+  if (!bestResult) {
+
+    console.log(
+      "No portrait found."
+    );
+
+    return null;
+
+  }
 
 
-            res.writeHead(200, {
-              "Content-Type":
-                "application/json"
-            });
+  const file =
+    bestResult.result.item.path;
 
 
-            res.end(
-              JSON.stringify({
-                unitDefId:
-                  data.unitDefId,
-
-                image:
-                  image
-              })
-            );
-
-          }
-        );
+  const score =
+    bestResult.result.score;
 
 
-      } catch (error) {
+  console.log(
+    `Best match: ${file}`
+  );
 
-        console.error(error);
 
-        res.writeHead(500, {
-          "Content-Type":
-            "application/json"
-        });
+  console.log(
+    `Score: ${score}`
+  );
 
-        res.end(
-          JSON.stringify({
-            error:
-              error.toString()
-          })
-        );
+
+  /*
+   * Не принимаем совсем плохие совпадения.
+   */
+  if (score > 0.45) {
+
+    console.log(
+      "Match rejected: score too high."
+    );
+
+    return null;
+
+  }
+
+
+  return {
+
+    url:
+      "https://raw.githubusercontent.com/tools4swgoh/swgoh-icons/master/" +
+      file
+        .split("/")
+        .map(
+          encodeURIComponent
+        )
+        .join("/"),
+
+    file,
+
+    score,
+
+    searchedName:
+      bestResult.searchedName
+
+  };
+
+}
+
+
+/* =========================================================
+   SERVER
+========================================================= */
+
+const server =
+  http.createServer(
+    async (req, res) => {
+
+
+      res.setHeader(
+        "Access-Control-Allow-Origin",
+        "*"
+      );
+
+
+      res.setHeader(
+        "Access-Control-Allow-Methods",
+        "POST, OPTIONS"
+      );
+
+
+      res.setHeader(
+        "Access-Control-Allow-Headers",
+        "Content-Type"
+      );
+
+
+      if (
+        req.method ===
+        "OPTIONS"
+      ) {
+
+        res.writeHead(204);
+        res.end();
+
+        return;
 
       }
 
-      return;
-    }
+
+      /* ===================================================
+         CHARACTER IMAGE
+      =================================================== */
+
+      if (
+        req.method === "POST" &&
+        req.url ===
+          "/characterImage"
+      ) {
+
+        try {
+
+          let body = "";
 
 
-    /*
-     * Обычный proxy Comlink
-     */
-    const targetPath =
-      ALLOWED_ROUTES[req.url];
+          req.on(
+            "data",
+            chunk => {
+              body += chunk;
+            }
+          );
 
 
-    if (
-      req.method === "POST" &&
-      targetPath
-    ) {
+          req.on(
+            "end",
+            async () => {
 
-      try {
-
-        let body = "";
-
-        req.on(
-          "data",
-          chunk => {
-            body += chunk;
-          }
-        );
+              const data =
+                JSON.parse(body);
 
 
-        req.on(
-          "end",
-          async () => {
-
-            console.log(
-              `POST ${req.url}`
-            );
+              const image =
+                await findCharacterImage(
+                  data.unitDefId
+                );
 
 
-            const response =
-              await fetch(
-                `${COMLINK_URL}${targetPath}`,
+              res.writeHead(
+                200,
                 {
-                  method: "POST",
-
-                  headers: {
-                    "Content-Type":
-                      "application/json"
-                  },
-
-                  body
+                  "Content-Type":
+                    "application/json"
                 }
               );
 
 
-            const text =
-              await response.text();
+              res.end(
+                JSON.stringify({
+
+                  unitDefId:
+                    data.unitDefId,
+
+                  image
+
+                })
+              );
+
+            }
+          );
 
 
-            res.writeHead(
-              response.status,
-              {
-                "Content-Type":
-                  "application/json"
-              }
-            );
+        } catch (error) {
+
+          console.error(error);
 
 
-            res.end(text);
-
-          }
-        );
-
-
-      } catch (error) {
-
-        console.error(error);
+          res.writeHead(
+            500,
+            {
+              "Content-Type":
+                "application/json"
+            }
+          );
 
 
-        res.writeHead(500, {
-          "Content-Type":
-            "application/json"
-        });
+          res.end(
+            JSON.stringify({
+
+              error:
+                error.toString()
+
+            })
+          );
+
+        }
 
 
-        res.end(
-          JSON.stringify({
-            error:
-              error.toString()
-          })
-        );
+        return;
 
       }
 
-      return;
+
+      /* ===================================================
+         COMLINK PROXY
+      =================================================== */
+
+      const targetPath =
+        ALLOWED_ROUTES[
+          req.url
+        ];
+
+
+      if (
+        req.method === "POST" &&
+        targetPath
+      ) {
+
+        try {
+
+          let body = "";
+
+
+          req.on(
+            "data",
+            chunk => {
+              body += chunk;
+            }
+          );
+
+
+          req.on(
+            "end",
+            async () => {
+
+              console.log(
+                `POST ${req.url}`
+              );
+
+
+              const response =
+                await fetch(
+                  `${COMLINK_URL}${targetPath}`,
+                  {
+
+                    method: "POST",
+
+                    headers: {
+                      "Content-Type":
+                        "application/json"
+                    },
+
+                    body
+
+                  }
+                );
+
+
+              const text =
+                await response.text();
+
+
+              res.writeHead(
+                response.status,
+                {
+                  "Content-Type":
+                    "application/json"
+                }
+              );
+
+
+              res.end(text);
+
+            }
+          );
+
+
+        } catch (error) {
+
+          console.error(error);
+
+
+          res.writeHead(
+            500,
+            {
+              "Content-Type":
+                "application/json"
+            }
+          );
+
+
+          res.end(
+            JSON.stringify({
+
+              error:
+                error.toString()
+
+            })
+          );
+
+        }
+
+
+        return;
+
+      }
+
+
+      /* ===================================================
+         404
+      =================================================== */
+
+      res.writeHead(
+        404,
+        {
+          "Content-Type":
+            "application/json"
+        }
+      );
+
+
+      res.end(
+        JSON.stringify({
+
+          message:
+            "Route not found"
+
+        })
+      );
+
     }
-
-
-    res.writeHead(404, {
-      "Content-Type":
-        "application/json"
-    });
-
-
-    res.end(
-      JSON.stringify({
-        message:
-          "Route not found"
-      })
-    );
-
-  });
+  );
 
 
 server.listen(
@@ -397,4 +843,3 @@ server.listen(
 
   }
 );
-
