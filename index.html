@@ -19,11 +19,9 @@
     html,
     body {
       margin: 0;
-      padding: 0;
       min-height: 100%;
       background: #0d1015;
       color: #f2f4f7;
-
       font-family:
         -apple-system,
         BlinkMacSystemFont,
@@ -35,7 +33,7 @@
     }
 
     body {
-      padding: 18px;
+      padding: 16px;
     }
 
     button,
@@ -49,41 +47,36 @@
 
     .container {
       width: 100%;
-      max-width: 1000px;
+      max-width: 900px;
       margin: 0 auto;
     }
 
-    /* HEADER */
-
     .header {
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
 
     .title {
       margin: 0;
-
       font-size: 27px;
-      line-height: 1.15;
       font-weight: 800;
       letter-spacing: -0.5px;
     }
 
     .subtitle {
       margin-top: 5px;
-
-      color: #858e9d;
+      color: #818b9b;
       font-size: 13px;
     }
 
-    /* SEARCH */
-
-    .search-card {
-      padding: 14px;
-
+    .search-card,
+    .section {
       background: #151a22;
       border: 1px solid #242b36;
       border-radius: 15px;
+    }
 
+    .search-card {
+      padding: 14px;
       margin-bottom: 14px;
     }
 
@@ -95,7 +88,6 @@
     .ally-input {
       flex: 1;
       min-width: 0;
-
       height: 47px;
       padding: 0 14px;
 
@@ -104,8 +96,8 @@
 
       background: #0d1117;
       color: #fff;
-
       outline: none;
+
       font-size: 15px;
     }
 
@@ -136,11 +128,8 @@
       cursor: default;
     }
 
-    /* STATUS */
-
     .status {
       display: none;
-
       padding: 11px 13px;
       margin-bottom: 14px;
 
@@ -152,6 +141,7 @@
       color: #aeb6c4;
       font-size: 13px;
       line-height: 1.45;
+      white-space: pre-wrap;
     }
 
     .status.visible {
@@ -170,17 +160,10 @@
       color: #b9e6c6;
     }
 
-    /* CARD */
-
     .section {
       display: none;
-
       padding: 15px;
       margin-bottom: 14px;
-
-      background: #151a22;
-      border: 1px solid #242b36;
-      border-radius: 15px;
     }
 
     .section.visible {
@@ -189,30 +172,20 @@
 
     .section-title {
       margin: 0;
-
       font-size: 17px;
       font-weight: 800;
     }
 
     .section-subtitle {
       margin-top: 3px;
-
       color: #7e8796;
       font-size: 11px;
     }
 
     /* PLAYER */
 
-    .player-head {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 15px;
-    }
-
     .player-name {
       margin: 0;
-
       font-size: 23px;
       line-height: 1.2;
       font-weight: 800;
@@ -220,7 +193,6 @@
 
     .player-meta {
       margin-top: 6px;
-
       color: #8b95a5;
       font-size: 12px;
       line-height: 1.5;
@@ -228,21 +200,17 @@
 
     .ratings {
       display: grid;
-
-      grid-template-columns:
-        repeat(3, minmax(0, 1fr));
-
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 9px;
-
       margin-top: 15px;
     }
 
     .rating {
       padding: 11px;
-
       background: #0e131a;
       border: 1px solid #242b36;
       border-radius: 11px;
+      min-width: 0;
     }
 
     .rating-label {
@@ -252,21 +220,18 @@
 
     .rating-value {
       margin-top: 3px;
-
       font-size: 21px;
       font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* SQUAD */
 
     .squad {
       display: grid;
-
-      grid-template-columns:
-        repeat(5, minmax(0, 1fr));
-
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 9px;
-
       margin-top: 13px;
     }
 
@@ -283,23 +248,18 @@
 
     .unit-image-wrap {
       position: relative;
-
       width: 100%;
       aspect-ratio: 1;
-
       overflow: hidden;
 
       border-radius: 8px;
-
       background: #080b10;
     }
 
     .unit-image {
       display: block;
-
       width: 100%;
       height: 100%;
-
       object-fit: cover;
     }
 
@@ -325,6 +285,7 @@
       color: #c3cad4;
       font-size: 10px;
       font-weight: 700;
+      text-align: center;
     }
 
     /* DATACRON */
@@ -346,7 +307,6 @@
 
     .datacron-meta {
       margin-top: 4px;
-
       color: #7f8998;
       font-size: 11px;
     }
@@ -355,13 +315,11 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
-
       margin-top: 10px;
     }
 
     .affix {
       padding: 8px 9px;
-
       border-radius: 8px;
 
       background: #151b24;
@@ -369,23 +327,17 @@
       color: #aab3c0;
       font-size: 11px;
       line-height: 1.4;
+      word-break: break-word;
     }
-
-    /* ERROR */
 
     .empty {
       padding: 24px 10px;
-
       text-align: center;
-
       color: #687383;
       font-size: 12px;
     }
 
-    /* MOBILE */
-
     @media (max-width: 600px) {
-
       body {
         padding: 12px;
       }
@@ -399,8 +351,7 @@
       }
 
       .ratings {
-        grid-template-columns:
-          repeat(3, minmax(0, 1fr));
+        gap: 6px;
       }
 
       .rating {
@@ -412,7 +363,7 @@
       }
 
       .rating-value {
-        font-size: 18px;
+        font-size: 17px;
       }
 
       .squad {
@@ -434,25 +385,14 @@
 
 <div class="container">
 
-  <!-- HEADER -->
-
   <div class="header">
-
-    <h1 class="title">
-      SWGOH Arena Tracker
-    </h1>
-
+    <h1 class="title">SWGOH Arena Tracker</h1>
     <div class="subtitle">
       Squad Arena · Squad · Datacron
     </div>
-
   </div>
 
-
-  <!-- SEARCH -->
-
   <div class="search-card">
-
     <div class="input-row">
 
       <input
@@ -467,58 +407,28 @@
       <button
         id="arenaButton"
         class="button"
-        onclick="loadArena()"
       >
         Получить Arena
       </button>
 
     </div>
-
   </div>
 
-
-  <!-- STATUS -->
-
-  <div
-    id="status"
-    class="status"
-  ></div>
-
+  <div id="status" class="status"></div>
 
   <!-- PLAYER -->
 
-  <div
-    id="playerSection"
-    class="section"
-  >
+  <section id="playerSection" class="section">
 
-    <div class="player-head">
+    <h2 id="playerName" class="player-name">—</h2>
 
-      <div>
-
-        <h2
-          id="playerName"
-          class="player-name"
-        >
-          —
-        </h2>
-
-        <div
-          id="playerMeta"
-          class="player-meta"
-        >
-          —
-        </div>
-
-      </div>
-
+    <div id="playerMeta" class="player-meta">
+      —
     </div>
-
 
     <div class="ratings">
 
       <div class="rating">
-
         <div class="rating-label">
           Squad Arena
         </div>
@@ -529,12 +439,9 @@
         >
           —
         </div>
-
       </div>
 
-
       <div class="rating">
-
         <div class="rating-label">
           Fleet Arena
         </div>
@@ -545,12 +452,9 @@
         >
           —
         </div>
-
       </div>
 
-
       <div class="rating">
-
         <div class="rating-label">
           Skill Rating
         </div>
@@ -561,20 +465,16 @@
         >
           —
         </div>
-
       </div>
 
     </div>
 
-  </div>
+  </section>
 
 
   <!-- SQUAD -->
 
-  <div
-    id="squadSection"
-    class="section"
-  >
+  <section id="squadSection" class="section">
 
     <h2 class="section-title">
       Squad
@@ -589,12 +489,12 @@
       class="squad"
     ></div>
 
-  </div>
+  </section>
 
 
   <!-- DATACRON -->
 
-  <div
+  <section
     id="datacronSection"
     class="section"
   >
@@ -612,126 +512,96 @@
       class="datacron-box"
     ></div>
 
-  </div>
+  </section>
 
 </div>
 
 
 <script>
 
-  // ==========================================================
-  // HELPERS
-  // ==========================================================
+  /*
+   * ============================================================
+   * CONFIG
+   * ============================================================
+   */
+
+  const API_BASE_URL =
+    "https://arena-tracker-proxy.onrender.com";
+
+
+  /*
+   * ============================================================
+   * ELEMENTS
+   * ============================================================
+   */
 
   const allyCodeInput =
     document.getElementById("allyCode");
 
-  const statusElement =
-    document.getElementById("status");
-
   const arenaButton =
     document.getElementById("arenaButton");
 
+  const statusElement =
+    document.getElementById("status");
+
+
+  /*
+   * ============================================================
+   * STATUS
+   * ============================================================
+   */
 
   function setStatus(
-    message,
+    text,
     type = ""
   ) {
 
     statusElement.textContent =
-      message;
+      text;
 
     statusElement.className =
       "status visible " + type;
   }
 
 
-  function clearStatus() {
+  function clearResults() {
 
-    statusElement.textContent =
-      "";
+    document
+      .getElementById("playerSection")
+      .classList.remove("visible");
 
-    statusElement.className =
-      "status";
+    document
+      .getElementById("squadSection")
+      .classList.remove("visible");
+
+    document
+      .getElementById("datacronSection")
+      .classList.remove("visible");
+
+    document
+      .getElementById("squad")
+      .replaceChildren();
+
+    document
+      .getElementById("datacron")
+      .replaceChildren();
   }
 
 
-  function escapeHtml(value) {
+  /*
+   * ============================================================
+   * API
+   * ============================================================
+   */
 
-    return String(
-      value ?? ""
-    )
-      .replace(
-        /&/g,
-        "&amp;"
-      )
-      .replace(
-        /</g,
-        "&lt;"
-      )
-      .replace(
-        />/g,
-        "&gt;"
-      )
-      .replace(
-        /"/g,
-        "&quot;"
-      )
-      .replace(
-        /'/g,
-        "&#039;"
-      );
-  }
-
-
-  function getAllyCode() {
-
-    const value =
-      allyCodeInput.value
-        .trim()
-        .replace(/\s+/g, "");
-
-    if (!value) {
-      throw new Error(
-        "Введите Ally Code."
-      );
-    }
-
-    if (!/^\d+$/.test(value)) {
-      throw new Error(
-        "Ally Code должен содержать только цифры."
-      );
-    }
-
-    return value;
-  }
-
-
-  // ==========================================================
-  // API
-  // ==========================================================
-
-  // GitHub Pages is a static host, so API requests must go to
-  // the separate Arena Tracker proxy running on Render.
-  // Set this to your proxy Render URL (not the Comlink URL).
-  const API_BASE_URL =
-    "https://arena-tracker-proxy.onrender.com";
-
-  async function post(
+  async function apiPost(
     path,
     body
   ) {
 
-    console.log(
-      "POST",
-      path,
-      body
-    );
-
-
     const response =
       await fetch(
-        `${API_BASE_URL}${path}`,
+        API_BASE_URL + path,
         {
           method: "POST",
 
@@ -745,101 +615,213 @@
         }
       );
 
-
     const raw =
       await response.text();
-
 
     let data;
 
     try {
-      data =
-        JSON.parse(raw);
+      data = JSON.parse(raw);
     } catch {
-      data =
-        raw;
+      data = raw;
     }
-
-
-    console.log(
-      "RESPONSE",
-      response.status,
-      data
-    );
-
 
     if (!response.ok) {
 
+      let message =
+        `Ошибка сервера: ${response.status}`;
+
       if (
         data &&
-        typeof data === "object" &&
-        data.error
+        typeof data === "object"
       ) {
 
-        throw new Error(
-          data.error
-        );
+        message =
+          data.error ||
+          data.message ||
+          message;
       }
 
-
-      throw new Error(
-        `Сервер вернул ошибку ${response.status}.`
-      );
+      throw new Error(message);
     }
-
 
     return data;
   }
 
 
-  // ==========================================================
-  // MAIN
-  // ==========================================================
+  /*
+   * Некоторые proxy-реализации могут
+   * вернуть данные напрямую:
+   *
+   * { pvpProfile: [...] }
+   *
+   * либо завернуть их:
+   *
+   * { data: { pvpProfile: [...] } }
+   *
+   * либо:
+   *
+   * { result: { pvpProfile: [...] } }
+   */
+
+  function unwrapArenaData(
+    response
+  ) {
+
+    if (
+      response &&
+      typeof response === "object"
+    ) {
+
+      if (
+        Array.isArray(
+          response.pvpProfile
+        )
+      ) {
+        return response;
+      }
+
+      if (
+        response.data &&
+        typeof response.data === "object"
+      ) {
+
+        if (
+          Array.isArray(
+            response.data.pvpProfile
+          )
+        ) {
+          return response.data;
+        }
+      }
+
+      if (
+        response.result &&
+        typeof response.result === "object"
+      ) {
+
+        if (
+          Array.isArray(
+            response.result.pvpProfile
+          )
+        ) {
+          return response.result;
+        }
+      }
+
+      if (
+        response.response &&
+        typeof response.response === "object"
+      ) {
+
+        if (
+          Array.isArray(
+            response.response.pvpProfile
+          )
+        ) {
+          return response.response;
+        }
+      }
+    }
+
+    return response;
+  }
+
+
+  /*
+   * ============================================================
+   * LOAD
+   * ============================================================
+   */
 
   async function loadArena() {
 
-    try {
+    const allyCode =
+      allyCodeInput.value
+        .trim()
+        .replace(/\s+/g, "");
 
-      const allyCode =
-        getAllyCode();
-
-
-      arenaButton.disabled =
-        true;
-
+    if (!allyCode) {
 
       setStatus(
-        "Получаю данные Arena…"
+        "Введите Ally Code.",
+        "error"
       );
 
+      return;
+    }
+
+    if (!/^\d+$/.test(allyCode)) {
+
+      setStatus(
+        "Ally Code должен содержать только цифры.",
+        "error"
+      );
+
+      return;
+    }
+
+    arenaButton.disabled = true;
+
+    clearResults();
+
+    setStatus(
+      "Получаю данные Arena…"
+    );
+
+    try {
 
       /*
-        ЕДИНСТВЕННЫЙ запрос к Comlink.
+       * ВАЖНО:
+       *
+       * Только playerArena.
+       *
+       * НИКАКОГО /player.
+       */
 
-        Никакого /player.
-
-        /playerArena уже содержит
-        нужную информацию о игроке.
-      */
-
-      const data =
-        await post(
+      const response =
+        await apiPost(
           "/playerArena",
           {
-            allyCode
+            allyCode: allyCode
           }
         );
 
+      const data =
+        unwrapArenaData(
+          response
+        );
 
       console.log(
-        "ARENA DATA",
+        "SWGOH Arena data:",
         data
       );
 
 
-      renderEverything(
+      if (
+        !data ||
+        !Array.isArray(
+          data.pvpProfile
+        )
+      ) {
+
+        throw new Error(
+          "Сервер ответил, но структура Arena-данных не распознана."
+        );
+      }
+
+
+      renderPlayer(
         data,
         allyCode
+      );
+
+      renderSquad(
+        data
+      );
+
+      renderDatacron(
+        data
       );
 
 
@@ -855,10 +837,9 @@
         error
       );
 
-
       setStatus(
-        error.message ||
-        "Не удалось получить данные.",
+        error?.message ||
+        "Не удалось получить данные Arena.",
         "error"
       );
 
@@ -870,33 +851,11 @@
   }
 
 
-  // ==========================================================
-  // RENDER EVERYTHING
-  // ==========================================================
-
-  function renderEverything(
-    data,
-    allyCode
-  ) {
-
-    renderPlayer(
-      data,
-      allyCode
-    );
-
-    renderSquad(
-      data
-    );
-
-    renderDatacron(
-      data
-    );
-  }
-
-
-  // ==========================================================
-  // PLAYER
-  // ==========================================================
+  /*
+   * ============================================================
+   * PLAYER
+   * ============================================================
+   */
 
   function renderPlayer(
     data,
@@ -908,103 +867,120 @@
         "playerSection"
       );
 
-
-    section.classList.add(
-      "visible"
-    );
-
-
-    const name =
-      data?.name ||
-      data?.player?.name ||
-      data?.playerData?.name ||
-      "Unknown";
-
-
-    const level =
-      data?.level ??
-      data?.player?.level ??
-      data?.playerData?.level ??
-      "—";
-
-
-    document.getElementById(
-      "playerName"
-    ).textContent =
-      name;
-
-
-    document.getElementById(
-      "playerMeta"
-    ).textContent =
-      `Level ${level} · Ally Code ${allyCode}`;
-
-
     const profiles =
       Array.isArray(
-        data?.pvpProfile
+        data.pvpProfile
       )
         ? data.pvpProfile
         : [];
 
 
-    let squadRank =
+    /*
+     * В реальном ответе Comlink
+     * имя и уровень находятся
+     * непосредственно в объекте ответа.
+     */
+
+    const name =
+      data.name ??
+      data.player?.name ??
+      data.playerData?.name ??
+      "Unknown";
+
+
+    const level =
+      data.level ??
+      data.player?.level ??
+      data.playerData?.level ??
       "—";
 
-    let fleetRank =
+
+    /*
+     * Squad = pvpProfile[0]
+     * Fleet = pvpProfile[1]
+     */
+
+    const squadRank =
+      profiles[0]?.rank ??
+      "—";
+
+    const fleetRank =
+      profiles[1]?.rank ??
       "—";
 
 
-    if (profiles[0]) {
+    /*
+     * Skill Rating
+     */
 
-      squadRank =
-        profiles[0].rank ??
-        "—";
-    }
+    const skillRating =
+      data
+        ?.playerRating
+        ?.playerSkillRating
+        ?.skillRating
+      ??
+      data
+        ?.player
+        ?.playerRating
+        ?.playerSkillRating
+        ?.skillRating
+      ??
+      "—";
 
 
-    if (profiles[1]) {
+    document
+      .getElementById(
+        "playerName"
+      )
+      .textContent =
+      name;
 
-      fleetRank =
-        profiles[1].rank ??
-        "—";
-    }
+
+    document
+      .getElementById(
+        "playerMeta"
+      )
+      .textContent =
+      `Level ${level} · Ally Code ${allyCode}`;
 
 
-    document.getElementById(
-      "squadRank"
-    ).textContent =
+    document
+      .getElementById(
+        "squadRank"
+      )
+      .textContent =
       squadRank;
 
 
-    document.getElementById(
-      "fleetRank"
-    ).textContent =
+    document
+      .getElementById(
+        "fleetRank"
+      )
+      .textContent =
       fleetRank;
 
 
-    const skillRating =
-      data?.playerRating
-        ?.playerSkillRating
-        ?.skillRating ??
-      data?.player?.playerRating
-        ?.playerSkillRating
-        ?.skillRating ??
-      "—";
-
-
-    document.getElementById(
-      "skillRating"
-    ).textContent =
+    document
+      .getElementById(
+        "skillRating"
+      )
+      .textContent =
       skillRating;
+
+
+    section.classList.add(
+      "visible"
+    );
   }
 
 
-  // ==========================================================
-  // SQUAD
-  // ==========================================================
+  /*
+   * ============================================================
+   * SQUAD
+   * ============================================================
+   */
 
-  function renderSquad(
+  async function renderSquad(
     data
   ) {
 
@@ -1019,18 +995,22 @@
       );
 
 
-    section.classList.add(
-      "visible"
-    );
+    container.replaceChildren();
 
 
-    container.innerHTML =
-      "";
-
+    /*
+     * Реальная структура:
+     *
+     * pvpProfile[0]
+     *   .squad
+     *     .cell[]
+     */
 
     const cells =
-      data?.pvpProfile?.[0]
-        ?.squad?.cell;
+      data
+        ?.pvpProfile?.[0]
+        ?.squad
+        ?.cell;
 
 
     if (
@@ -1045,21 +1025,35 @@
         </div>
         `;
 
+      section.classList.add(
+        "visible"
+      );
+
       return;
     }
 
 
     const sorted =
       [...cells].sort(
-        (a, b) =>
-          Number(
-            a.cellIndex ?? 0
-          ) -
-          Number(
-            b.cellIndex ?? 0
-          )
+        (a, b) => {
+
+          return (
+            Number(
+              a?.cellIndex ?? 0
+            ) -
+            Number(
+              b?.cellIndex ?? 0
+            )
+          );
+        }
       );
 
+
+    /*
+     * Создаём карточки СРАЗУ.
+     * Портреты загружаются отдельно.
+     * Один плохой портрет не ломает остальные.
+     */
 
     for (
       const cell of sorted
@@ -1070,18 +1064,24 @@
         cell?.unit?.unitDefId ||
         "";
 
-
       createUnitCard(
         container,
         unitDefId
       );
     }
+
+
+    section.classList.add(
+      "visible"
+    );
   }
 
 
-  // ==========================================================
-  // UNIT
-  // ==========================================================
+  /*
+   * ============================================================
+   * CHARACTER CARD
+   * ============================================================
+   */
 
   function createUnitCard(
     container,
@@ -1136,13 +1136,20 @@
       name
     );
 
-
     container.appendChild(
       card
     );
 
 
     if (!unitDefId) {
+
+      imageWrap.innerHTML =
+        `
+        <div class="unit-placeholder">
+          ?
+        </div>
+        `;
+
       return;
     }
 
@@ -1154,6 +1161,12 @@
   }
 
 
+  /*
+   * ============================================================
+   * PORTRAIT
+   * ============================================================
+   */
+
   async function loadPortrait(
     unitDefId,
     imageWrap
@@ -1162,17 +1175,26 @@
     try {
 
       const result =
-        await post(
+        await apiPost(
           "/characterImage",
           {
-            unitDefId
+            unitDefId:
+              unitDefId
           }
         );
 
 
+      console.log(
+        "Portrait:",
+        unitDefId,
+        result
+      );
+
+
       if (
-        !result?.ok ||
-        !result?.url
+        !result ||
+        result.ok !== true ||
+        !result.url
       ) {
 
         imageWrap.innerHTML =
@@ -1191,16 +1213,19 @@
           "img"
         );
 
-
       image.className =
         "unit-image";
-
 
       image.alt =
         prettyUnitName(
           unitDefId
         );
 
+      image.loading =
+        "eager";
+
+      image.decoding =
+        "async";
 
       image.src =
         result.url;
@@ -1208,6 +1233,11 @@
 
       image.onerror =
         () => {
+
+          console.error(
+            "Image failed:",
+            result.url
+          );
 
           imageWrap.innerHTML =
             `
@@ -1218,11 +1248,7 @@
         };
 
 
-      imageWrap.innerHTML =
-        "";
-
-
-      imageWrap.appendChild(
+      imageWrap.replaceChildren(
         image
       );
 
@@ -1234,7 +1260,6 @@
         error
       );
 
-
       imageWrap.innerHTML =
         `
         <div class="unit-placeholder">
@@ -1245,9 +1270,11 @@
   }
 
 
-  // ==========================================================
-  // DATACRON
-  // ==========================================================
+  /*
+   * ============================================================
+   * DATACRON
+   * ============================================================
+   */
 
   function renderDatacron(
     data
@@ -1265,10 +1292,15 @@
 
 
     const datacron =
-      data?.pvpProfile?.[0]
-        ?.squad?.datacron ||
-      data?.pvpProfile?.[0]
-        ?.datacron ||
+      data
+        ?.pvpProfile?.[0]
+        ?.squad
+        ?.datacron
+      ??
+      data
+        ?.pvpProfile?.[0]
+        ?.datacron
+      ??
       data?.datacron;
 
 
@@ -1278,8 +1310,7 @@
         "visible"
       );
 
-      container.innerHTML =
-        "";
+      container.replaceChildren();
 
       return;
     }
@@ -1326,20 +1357,21 @@
           ${
             affixes
               .map(
-                affix =>
-                  `
-                  <div class="affix">
-                    ${
-                      escapeHtml(
-                        typeof affix === "string"
-                          ? affix
-                          : JSON.stringify(
-                              affix
-                            )
-                      )
-                    }
-                  </div>
-                  `
+                affix => {
+
+                  const value =
+                    typeof affix === "string"
+                      ? affix
+                      : JSON.stringify(
+                          affix
+                        );
+
+                  return `
+                    <div class="affix">
+                      ${escapeHtml(value)}
+                    </div>
+                  `;
+                }
               )
               .join("")
           }
@@ -1365,9 +1397,11 @@
   }
 
 
-  // ==========================================================
-  // NAMES
-  // ==========================================================
+  /*
+   * ============================================================
+   * NAMES
+   * ============================================================
+   */
 
   function prettyUnitName(
     unitDefId
@@ -1429,7 +1463,10 @@
     };
 
 
-    if (names[base]) {
+    if (
+      names[base]
+    ) {
+
       return names[base];
     }
 
@@ -1447,9 +1484,53 @@
   }
 
 
-  // ==========================================================
-  // ENTER
-  // ==========================================================
+  /*
+   * ============================================================
+   * HTML ESCAPE
+   * ============================================================
+   */
+
+  function escapeHtml(
+    value
+  ) {
+
+    return String(
+      value ?? ""
+    )
+      .replace(
+        /&/g,
+        "&amp;"
+      )
+      .replace(
+        /</g,
+        "&lt;"
+      )
+      .replace(
+        />/g,
+        "&gt;"
+      )
+      .replace(
+        /"/g,
+        "&quot;"
+      )
+      .replace(
+        /'/g,
+        "&#039;"
+      );
+  }
+
+
+  /*
+   * ============================================================
+   * EVENTS
+   * ============================================================
+   */
+
+  arenaButton.addEventListener(
+    "click",
+    loadArena
+  );
+
 
   allyCodeInput.addEventListener(
     "keydown",
@@ -1458,9 +1539,9 @@
       if (
         event.key === "Enter"
       ) {
+
         loadArena();
       }
-
     }
   );
 
