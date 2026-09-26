@@ -25,7 +25,7 @@ let gameData = null;
 
 
 /* =========================================================
-   NORMALIZE
+   HELPERS
 ========================================================= */
 
 function normalize(text) {
@@ -38,16 +38,25 @@ function normalize(text) {
 
 
 /* =========================================================
-   LOAD ICONS
+   LOAD ICON FILES
 ========================================================= */
 
-async function loadIconFiles() {
+async function loadIconFiles(debug) {
 
   if (iconFiles) {
+
+    debug.push(
+      `Icon cache: ${iconFiles.length} files`
+    );
+
     return iconFiles;
+
   }
 
-  console.log("Loading SWGOH icon list...");
+
+  debug.push(
+    "Загружаем список иконок..."
+  );
 
 
   const response =
@@ -62,7 +71,7 @@ async function loadIconFiles() {
   if (!response.ok) {
 
     throw new Error(
-      `Icon API HTTP ${response.status}`
+      `Icons API HTTP ${response.status}`
     );
 
   }
@@ -83,8 +92,8 @@ async function loadIconFiles() {
       .map(file => file.path);
 
 
-  console.log(
-    `Loaded ${iconFiles.length} PNG files`
+  debug.push(
+    `Всего PNG: ${iconFiles.length}`
   );
 
 
@@ -97,15 +106,21 @@ async function loadIconFiles() {
    LOAD GAMEDATA
 ========================================================= */
 
-async function loadGameData() {
+async function loadGameData(debug) {
 
   if (gameData) {
+
+    debug.push(
+      "Gamedata: cache"
+    );
+
     return gameData;
+
   }
 
 
-  console.log(
-    "Loading SWGOH gamedata..."
+  debug.push(
+    "Загружаем SWGOH gamedata..."
   );
 
 
@@ -126,8 +141,8 @@ async function loadGameData() {
     await response.json();
 
 
-  console.log(
-    "Gamedata loaded"
+  debug.push(
+    "Gamedata загружен ✓"
   );
 
 
@@ -137,26 +152,26 @@ async function loadGameData() {
 
 
 /* =========================================================
-   BUILD FUSE INDEX
+   BUILD FUSE
 ========================================================= */
 
-async function buildFuseIndex() {
+async function buildFuse(debug) {
 
   if (fuse) {
+
+    debug.push(
+      "Fuse index: cache"
+    );
+
     return fuse;
+
   }
 
 
   const files =
-    await loadIconFiles();
+    await loadIconFiles(debug);
 
 
-  /*
-   * Нам нужны именно character portraits.
-   *
-   * Это сильно уменьшает количество мусора
-   * для fuzzy search.
-   */
   const characterFiles =
     files.filter(file => {
 
@@ -171,8 +186,8 @@ async function buildFuseIndex() {
     });
 
 
-  console.log(
-    `Character portraits: ${characterFiles.length}`
+  debug.push(
+    `Портретов персонажей: ${characterFiles.length}`
   );
 
 
@@ -207,7 +222,7 @@ async function buildFuseIndex() {
 
         includeScore: true,
 
-        threshold: 0.55,
+        threshold: 0.65,
 
         ignoreLocation: true,
 
@@ -217,25 +232,25 @@ async function buildFuseIndex() {
     );
 
 
+  debug.push(
+    "Fuse index создан ✓"
+  );
+
+
   return fuse;
 
 }
 
 
 /* =========================================================
-   FIND UNIT IN GAMEDATA
+   FIND UNIT DEFINITION
 ========================================================= */
 
-function findUnitDefinition(unitDefId) {
-
-  const data =
-    gameData;
-
-
-  if (!data) {
-    return null;
-  }
-
+function findUnitDefinition(
+  unitDefId,
+  data,
+  debug
+) {
 
   const baseId =
     unitDefId
@@ -243,17 +258,20 @@ function findUnitDefinition(unitDefId) {
 
 
   if (!baseId) {
+
+    debug.push(
+      "Base ID не найден"
+    );
+
     return null;
+
   }
 
 
-  /*
-   * В gameDataItems.json структура может
-   * отличаться между версиями.
-   *
-   * Поэтому пробуем несколько распространённых
-   * вариантов.
-   */
+  debug.push(
+    `Base ID: ${baseId}`
+  );
+
 
   const collections = [];
 
@@ -284,6 +302,33 @@ function findUnitDefinition(unitDefId) {
   }
 
 
+  /*
+   * Иногда gamedata содержит объект,
+   * а не массив.
+   */
+  if (
+    data.UnitDefinitions &&
+    typeof data.UnitDefinitions === "object" &&
+    !Array.isArray(data.UnitDefinitions)
+  ) {
+
+    const direct =
+      data.UnitDefinitions[baseId];
+
+
+    if (direct) {
+
+      debug.push(
+        "UnitDefinition найден ✓"
+      );
+
+      return direct;
+
+    }
+
+  }
+
+
   for (
     const collection
     of collections
@@ -308,10 +353,21 @@ function findUnitDefinition(unitDefId) {
 
 
     if (found) {
+
+      debug.push(
+        "UnitDefinition найден ✓"
+      );
+
       return found;
+
     }
 
   }
+
+
+  debug.push(
+    "UnitDefinition не найден"
+  );
 
 
   return null;
@@ -320,7 +376,7 @@ function findUnitDefinition(unitDefId) {
 
 
 /* =========================================================
-   EXTRACT POSSIBLE NAMES
+   GET POSSIBLE NAMES
 ========================================================= */
 
 function getPossibleNames(
@@ -331,9 +387,6 @@ function getPossibleNames(
   const names = [];
 
 
-  /*
-   * Сам ID.
-   */
   const baseId =
     unitDefId
       ?.split(":")[0];
@@ -345,16 +398,15 @@ function getPossibleNames(
 
 
   if (!definition) {
-    return names;
+
+    return [
+      ...new Set(names)
+    ];
+
   }
 
 
-  /*
-   * Пробуем различные поля
-   * из разных версий gamedata.
-   */
-
-  const possibleFields = [
+  const fields = [
 
     "name",
 
@@ -368,14 +420,16 @@ function getPossibleNames(
 
     "shortName",
 
-    "baseName"
+    "baseName",
+
+    "nameKey"
 
   ];
 
 
   for (
     const field
-    of possibleFields
+    of fields
   ) {
 
     const value =
@@ -395,20 +449,6 @@ function getPossibleNames(
   }
 
 
-  /*
-   * Иногда название лежит глубже.
-   */
-  if (
-    definition.nameKey
-  ) {
-
-    names.push(
-      definition.nameKey
-    );
-
-  }
-
-
   return [
     ...new Set(names)
   ];
@@ -417,154 +457,247 @@ function getPossibleNames(
 
 
 /* =========================================================
-   FUZZY SEARCH
+   FIND CHARACTER IMAGE
 ========================================================= */
 
 async function findCharacterImage(
   unitDefId
 ) {
 
-  const database =
-    await loadGameData();
+  const debug = [];
 
 
-  const search =
-    await buildFuseIndex();
-
-
-  const definition =
-    findUnitDefinition(
-      unitDefId
-    );
-
-
-  const names =
-    getPossibleNames(
-      unitDefId,
-      definition
-    );
-
-
-  console.log(
-    "Searching image for:",
-    unitDefId
+  debug.push(
+    `unitDefId: ${unitDefId}`
   );
 
 
-  console.log(
-    "Possible names:",
-    names
-  );
+  try {
+
+    const data =
+      await loadGameData(
+        debug
+      );
 
 
-  let bestResult =
-    null;
+    const search =
+      await buildFuse(
+        debug
+      );
 
 
-  /*
-   * Пробуем каждое известное имя.
-   */
-  for (
-    const name
-    of names
-  ) {
-
-    const results =
-      search.search(name);
+    const definition =
+      findUnitDefinition(
+        unitDefId,
+        data,
+        debug
+      );
 
 
-    if (!results.length) {
-      continue;
+    const names =
+      getPossibleNames(
+        unitDefId,
+        definition
+      );
+
+
+    debug.push(
+      `Имена для поиска: ${names.join(" | ")}`
+    );
+
+
+    let bestResult =
+      null;
+
+
+    let bestSearchName =
+      null;
+
+
+    for (
+      const name
+      of names
+    ) {
+
+      debug.push(
+        `Fuse search: "${name}"`
+      );
+
+
+      const results =
+        search.search(name);
+
+
+      if (!results.length) {
+
+        debug.push(
+          "  → результатов нет"
+        );
+
+        continue;
+
+      }
+
+
+      const candidate =
+        results[0];
+
+
+      const filename =
+        candidate.item.name;
+
+
+      const score =
+        candidate.score;
+
+
+      debug.push(
+        `  → ${filename}`
+      );
+
+
+      debug.push(
+        `  → score: ${score}`
+      );
+
+
+      if (
+        !bestResult ||
+        score <
+        bestResult.score
+      ) {
+
+        bestResult =
+          candidate;
+
+        bestSearchName =
+          name;
+
+      }
+
     }
 
 
-    const candidate =
-      results[0];
+    if (!bestResult) {
+
+      debug.push(
+        "❌ Портрет не найден"
+      );
 
 
-    if (
-      !bestResult ||
-      candidate.score <
-      bestResult.score
-    ) {
-
-      bestResult = {
-
-        result:
-          candidate,
-
-        searchedName:
-          name
-
+      return {
+        image: null,
+        debug
       };
 
     }
 
-  }
+
+    const file =
+      bestResult.item.path;
 
 
-  if (!bestResult) {
+    const score =
+      bestResult.score;
 
-    console.log(
-      "No portrait found."
+
+    debug.push(
+      `Лучшее совпадение: ${file}`
     );
 
-    return null;
 
-  }
-
-
-  const file =
-    bestResult.result.item.path;
-
-
-  const score =
-    bestResult.result.score;
-
-
-  console.log(
-    `Best match: ${file}`
-  );
-
-
-  console.log(
-    `Score: ${score}`
-  );
-
-
-  /*
-   * Не принимаем совсем плохие совпадения.
-   */
-  if (score > 0.45) {
-
-    console.log(
-      "Match rejected: score too high."
+    debug.push(
+      `Итоговый score: ${score}`
     );
 
-    return null;
 
-  }
+    /*
+     * Очень плохие совпадения
+     * отбрасываем.
+     */
+    if (
+      score !== undefined &&
+      score > 0.50
+    ) {
+
+      debug.push(
+        "❌ Совпадение слишком слабое"
+      );
 
 
-  return {
+      return {
+        image: null,
 
-    url:
-      "https://raw.githubusercontent.com/tools4swgoh/swgoh-icons/master/" +
+        debug,
+
+        match: {
+          file,
+          score,
+          searchedName:
+            bestSearchName
+        }
+      };
+
+    }
+
+
+    const encodedPath =
       file
         .split("/")
         .map(
           encodeURIComponent
         )
-        .join("/"),
+        .join("/");
 
-    file,
 
-    score,
+    const url =
+      `https://raw.githubusercontent.com/tools4swgoh/swgoh-icons/master/${encodedPath}`;
 
-    searchedName:
-      bestResult.searchedName
 
-  };
+    debug.push(
+      "✓ Портрет найден"
+    );
+
+
+    return {
+
+      image: {
+
+        url,
+
+        file,
+
+        score,
+
+        searchedName:
+          bestSearchName
+
+      },
+
+      debug
+
+    };
+
+
+  } catch (error) {
+
+    debug.push(
+      `❌ ERROR: ${error.message}`
+    );
+
+
+    return {
+
+      image: null,
+
+      debug,
+
+      error:
+        error.message
+
+    };
+
+  }
 
 }
 
@@ -597,8 +730,7 @@ const server =
 
 
       if (
-        req.method ===
-        "OPTIONS"
+        req.method === "OPTIONS"
       ) {
 
         res.writeHead(204);
@@ -619,28 +751,28 @@ const server =
           "/characterImage"
       ) {
 
-        try {
-
-          let body = "";
+        let body = "";
 
 
-          req.on(
-            "data",
-            chunk => {
-              body += chunk;
-            }
-          );
+        req.on(
+          "data",
+          chunk => {
+            body += chunk;
+          }
+        );
 
 
-          req.on(
-            "end",
-            async () => {
+        req.on(
+          "end",
+          async () => {
+
+            try {
 
               const data =
                 JSON.parse(body);
 
 
-              const image =
+              const result =
                 await findCharacterImage(
                   data.unitDefId
                 );
@@ -661,39 +793,48 @@ const server =
                   unitDefId:
                     data.unitDefId,
 
-                  image
+                  image:
+                    result.image,
+
+                  debug:
+                    result.debug,
+
+                  error:
+                    result.error ||
+                    null,
+
+                  match:
+                    result.match ||
+                    null
+
+                })
+              );
+
+
+            } catch (error) {
+
+              res.writeHead(
+                500,
+                {
+                  "Content-Type":
+                    "application/json"
+                }
+              );
+
+
+              res.end(
+                JSON.stringify({
+
+                  error:
+                    error.message
 
                 })
               );
 
             }
-          );
 
-
-        } catch (error) {
-
-          console.error(error);
-
-
-          res.writeHead(
-            500,
-            {
-              "Content-Type":
-                "application/json"
-            }
-          );
-
-
-          res.end(
-            JSON.stringify({
-
-              error:
-                error.toString()
-
-            })
-          );
-
-        }
+          }
+        );
 
 
         return;
@@ -702,7 +843,7 @@ const server =
 
 
       /* ===================================================
-         COMLINK PROXY
+         COMLINK
       =================================================== */
 
       const targetPath =
@@ -716,22 +857,22 @@ const server =
         targetPath
       ) {
 
-        try {
-
-          let body = "";
+        let body = "";
 
 
-          req.on(
-            "data",
-            chunk => {
-              body += chunk;
-            }
-          );
+        req.on(
+          "data",
+          chunk => {
+            body += chunk;
+          }
+        );
 
 
-          req.on(
-            "end",
-            async () => {
+        req.on(
+          "end",
+          async () => {
+
+            try {
 
               console.log(
                 `POST ${req.url}`
@@ -771,44 +912,37 @@ const server =
 
               res.end(text);
 
+
+            } catch (error) {
+
+              res.writeHead(
+                500,
+                {
+                  "Content-Type":
+                    "application/json"
+                }
+              );
+
+
+              res.end(
+                JSON.stringify({
+
+                  error:
+                    error.message
+
+                })
+              );
+
             }
-          );
 
-
-        } catch (error) {
-
-          console.error(error);
-
-
-          res.writeHead(
-            500,
-            {
-              "Content-Type":
-                "application/json"
-            }
-          );
-
-
-          res.end(
-            JSON.stringify({
-
-              error:
-                error.toString()
-
-            })
-          );
-
-        }
+          }
+        );
 
 
         return;
 
       }
 
-
-      /* ===================================================
-         404
-      =================================================== */
 
       res.writeHead(
         404,
