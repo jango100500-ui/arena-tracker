@@ -10,6 +10,32 @@ app.get("/health", (_, res) => {
   res.json({ ok: true });
 });
 
+app.get("/arena", async (req, res) => {
+  try {
+    const { allyCode } = req.query;
+
+    if (!allyCode) {
+      return res.status(400).json({ error: "allyCode is required" });
+    }
+
+    const response = await fetch(`${COMLINK_URL}/playerArena`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        payload: {
+          allyCode: String(allyCode),
+          playerDetailsOnly: false
+        }
+      })
+    });
+
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post("/arena", async (req, res) => {
   try {
     const { allyCode } = req.body;
@@ -30,7 +56,6 @@ app.post("/arena", async (req, res) => {
     });
 
     const data = await response.json();
-
     res.status(response.status).json(data);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -56,7 +81,6 @@ app.post("/profile", async (req, res) => {
     });
 
     const data = await response.json();
-
     res.status(response.status).json(data);
   } catch (error) {
     res.status(500).json({ error: error.message });
