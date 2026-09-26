@@ -25,11 +25,21 @@ button:disabled{opacity:.5;cursor:default}
 .info{background:#202126;border-radius:12px;padding:12px}
 .info-label{font-size:12px;color:#858892;margin-bottom:5px}
 .info-value{font-size:15px;word-break:break-word}
-.arena-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
-.unit{min-width:0;text-align:center}
-.unit-image{width:100%;aspect-ratio:1;border-radius:12px;background:#0d0e10;object-fit:contain;display:block}
-.unit-name{margin-top:7px;font-size:12px;line-height:1.25;word-break:break-word;color:#d8d9dd}
 .rank{font-size:24px;font-weight:700;margin-bottom:16px}
+.arena-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.unit{text-align:center;min-width:0}
+.unit-portrait{width:82px;height:82px;margin:0 auto;display:flex;align-items:center;justify-content:center;border-radius:50%;padding:3px;background:#292b31}
+.unit-portrait.light{background:#e8edf5}
+.unit-portrait.dark{background:#9b3b45}
+.unit-portrait.neutral{background:#8a8d94}
+.unit-portrait.galactic_legend{background:#d6a73a}
+.unit-image{width:100%;height:100%;border-radius:50%;background:#0b0c0e;object-fit:cover;display:block}
+.unit-name{margin-top:8px;font-size:12px;line-height:1.2;min-height:29px;word-break:break-word;color:#e1e2e5}
+.stars{height:16px;margin-top:4px;font-size:11px;letter-spacing:-1px;white-space:nowrap}
+.star-on{color:#f0d76b}
+.star-off{color:#41434a}
+.progress{margin-top:3px;font-size:11px;color:#aeb0b7}
+.title{font-size:16px;font-weight:600}
 .json-card{background:#15161a;border-radius:14px;overflow:hidden;margin-top:20px}
 .json-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#1d1e23}
 .json-title{font-size:13px;color:#a9abb3}
@@ -43,8 +53,11 @@ h1{font-size:24px}
 .input-row{flex-direction:column}
 .actions button{flex:1}
 .player-info{grid-template-columns:1fr}
-.arena-grid{gap:7px}
-.unit-name{font-size:11px}
+.arena-grid{gap:8px}
+.unit-portrait{width:68px;height:68px}
+.unit-name{font-size:10px}
+.stars{font-size:9px}
+.progress{font-size:10px}
 }
 </style>
 </head>
@@ -86,8 +99,6 @@ const result=document.getElementById("result");
 const json=document.getElementById("json");
 const copyBtn=document.getElementById("copyBtn");
 
-let lastData={};
-
 function setLoading(value){
     arenaBtn.disabled=value;
     profileBtn.disabled=value;
@@ -99,13 +110,12 @@ function setStatus(text,error=false){
 }
 
 function showJson(data){
-    lastData=data;
     json.textContent=JSON.stringify(data,null,2);
 }
 
 function value(data,keys){
     for(const key of keys){
-        if(data?.[key]!==undefined&&data[key]!==null&&data[key]!=="") return data[key];
+        if(data?.[key]!==undefined&&data?.[key]!==null&&data?.[key]!=="") return data[key];
     }
     return "—";
 }
@@ -120,22 +130,52 @@ function escapeHtml(text){
     }[char]));
 }
 
+function renderStars(rarity){
+    const value=Number(rarity)||0;
+    let html="";
+
+    for(let i=1;i<=7;i++){
+        html+=`<span class="${i<=value?"star-on":"star-off"}">★</span>`;
+    }
+
+    return html;
+}
+
+function renderProgress(unit){
+    const gear=Number(unit.gearTier)||0;
+    const relic=Number(unit.relicTier)||0;
+
+    if(relic>0) {
+        return `R${relic}`;
+    }
+
+    if(gear>0) {
+        return `G${gear}`;
+    }
+
+    return "";
+}
+
 function unitCard(unit){
     const id=unit.unitDefId||"";
-    const baseId=id.split(":")[0];
+    const alignment=unit.alignment||"neutral";
     const image=`${API}/characterImage?definitionId=${encodeURIComponent(id)}`;
 
     return `
         <div class="unit">
-            <img class="unit-image" src="${image}" alt="${escapeHtml(baseId)}" loading="lazy">
-            <div class="unit-name">${escapeHtml(baseId)}</div>
+            <div class="unit-portrait ${escapeHtml(alignment)}">
+                <img class="unit-image" src="${image}" alt="${escapeHtml(unit.name||unit.baseId||id)}" loading="lazy">
+            </div>
+            <div class="unit-name">${escapeHtml(unit.name||unit.baseId||id)}</div>
+            <div class="stars">${renderStars(unit.rarity)}</div>
+            <div class="progress">${escapeHtml(renderProgress(unit))}</div>
         </div>
     `;
 }
 
 function renderArena(data){
     const profiles=Array.isArray(data.pvpProfile)?data.pvpProfile:[];
-    const title=value(data,["title","titleName","playerTitle"]);
+    const title=value(data,["title"]);
     const guild=value(data,["guildName","guild"]);
     const name=value(data,["name","playerName"]);
 
@@ -145,7 +185,7 @@ function renderArena(data){
             <div class="player-info">
                 <div class="info">
                     <div class="info-label">Титул</div>
-                    <div class="info-value">${escapeHtml(title)}</div>
+                    <div class="info-value title">${escapeHtml(title)}</div>
                 </div>
                 <div class="info">
                     <div class="info-label">Гильдия</div>
@@ -160,6 +200,7 @@ function renderArena(data){
 
         ${profiles.map(profile=>{
             const cells=profile?.squad?.cell||[];
+
             return `
                 <div class="card">
                     <h2>Арена ${profile.tab||""}</h2>
@@ -171,12 +212,13 @@ function renderArena(data){
             `;
         }).join("")}
     `;
+
     result.classList.remove("hidden");
 }
 
 function renderProfile(data){
     const name=value(data,["name","playerName"]);
-    const title=value(data,["title","titleName","playerTitle"]);
+    const title=value(data,["title"]);
     const guild=value(data,["guildName","guild"]);
     const level=value(data,["level"]);
 
@@ -190,7 +232,7 @@ function renderProfile(data){
                 </div>
                 <div class="info">
                     <div class="info-label">Титул</div>
-                    <div class="info-value">${escapeHtml(title)}</div>
+                    <div class="info-value title">${escapeHtml(title)}</div>
                 </div>
                 <div class="info">
                     <div class="info-label">Гильдия</div>
@@ -199,6 +241,7 @@ function renderProfile(data){
             </div>
         </div>
     `;
+
     result.classList.remove("hidden");
 }
 
@@ -237,7 +280,9 @@ arenaBtn.addEventListener("click",()=>request("/arena",renderArena));
 profileBtn.addEventListener("click",()=>request("/profile",renderProfile));
 
 allyCode.addEventListener("keydown",event=>{
-    if(event.key==="Enter") request("/arena",renderArena);
+    if(event.key==="Enter"){
+        request("/arena",renderArena);
+    }
 });
 
 copyBtn.addEventListener("click",async()=>{
