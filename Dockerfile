@@ -1,1 +1,14 @@
-FROM ghcr.io/swgoh-utils/swgoh-comlink:latest
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY proxy/package.json ./package.json
+RUN npm install --omit=dev
+
+COPY proxy/server.js ./server.js
+
+ENV NODE_ENV=production
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]

@@ -711,6 +711,12 @@
   // API
   // ==========================================================
 
+  // GitHub Pages is a static host, so API requests must go to
+  // the separate Arena Tracker proxy running on Render.
+  // Set this to your proxy Render URL (not the Comlink URL).
+  const API_BASE_URL =
+    "https://YOUR-ARENA-TRACKER-PROXY.onrender.com";
+
   async function post(
     path,
     body
@@ -725,7 +731,7 @@
 
     const response =
       await fetch(
-        path,
+        `${API_BASE_URL}${path}`,
         {
           method: "POST",
 
