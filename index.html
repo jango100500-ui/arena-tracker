@@ -222,15 +222,11 @@
     .character {
 
       min-width: 0;
-
       text-align: center;
 
     }
 
 
-    /*
-     * КРУГЛЫЙ ПОРТРЕТ
-     */
     .portrait {
 
       width: 100%;
@@ -250,6 +246,40 @@
     }
 
 
+    .portrait.loading {
+
+      opacity: 0.35;
+
+      animation:
+        pulse 1.2s infinite;
+
+    }
+
+
+    .portrait.error {
+
+      opacity: 0.25;
+
+    }
+
+
+    @keyframes pulse {
+
+      0% {
+        opacity: 0.3;
+      }
+
+      50% {
+        opacity: 0.8;
+      }
+
+      100% {
+        opacity: 0.3;
+      }
+
+    }
+
+
     .character-name {
 
       margin-top: 6px;
@@ -265,32 +295,125 @@
     }
 
 
-    .loading {
+    /* =====================================================
+       DEBUG
+    ===================================================== */
 
-      opacity: 0.5;
+    .debug-button {
 
-      animation:
-        pulse 1.2s infinite;
+      width: 100%;
+
+      margin-top: 20px;
+
+      padding: 10px;
+
+      background: #191c22;
+
+      border: 1px solid #30343c;
+
+      color: #8f96a1;
+
+      font-size: 12px;
+
+      text-align: left;
+
+    }
+
+
+    .debug-panel {
+
+      display: none;
+
+      margin-top: 8px;
+
+      border-radius: 10px;
+
+      background: #090b0e;
+
+      border: 1px solid #292d34;
+
+      overflow: hidden;
 
     }
 
 
-    @keyframes pulse {
+    .debug-header {
 
-      0% {
-        opacity: 0.35;
-      }
+      padding: 10px 12px;
 
-      50% {
-        opacity: 0.8;
-      }
+      color: #8f96a1;
 
-      100% {
-        opacity: 0.35;
-      }
+      font-size: 11px;
+
+      border-bottom:
+        1px solid #292d34;
+
+      font-weight: 700;
 
     }
 
+
+    .debug-content {
+
+      max-height: 320px;
+
+      overflow-y: auto;
+
+      padding: 10px 12px;
+
+      font-family:
+        monospace;
+
+      font-size: 10px;
+
+      line-height: 1.55;
+
+      color: #aeb4be;
+
+      white-space: pre-wrap;
+
+      word-break: break-word;
+
+    }
+
+
+    .debug-entry {
+
+      padding-bottom: 3px;
+
+    }
+
+
+    .debug-success {
+
+      color: #8bcf9a;
+
+    }
+
+
+    .debug-error {
+
+      color: #e88787;
+
+    }
+
+
+    .debug-title {
+
+      margin-top: 10px;
+
+      margin-bottom: 4px;
+
+      color: #ffffff;
+
+      font-weight: 700;
+
+    }
+
+
+    /* =====================================================
+       JSON
+    ===================================================== */
 
     .json-section {
 
@@ -336,23 +459,17 @@
     @media (max-width: 420px) {
 
       .squad {
-
         gap: 6px;
-
       }
 
 
       .character-name {
-
         font-size: 9px;
-
       }
 
 
       .buttons {
-
         grid-template-columns: 1fr;
-
       }
 
     }
@@ -412,9 +529,7 @@
     class="arena-card"
   >
 
-
     <div class="player-header">
-
 
       <div>
 
@@ -452,7 +567,6 @@
 
       </div>
 
-
     </div>
 
 
@@ -466,9 +580,40 @@
       class="squad"
     ></div>
 
+  </div>
+
+
+  <!-- DEBUG -->
+
+  <button
+    class="debug-button"
+    onclick="toggleDebug()"
+  >
+    DEBUG ▾
+  </button>
+
+
+  <div
+    id="debugPanel"
+    class="debug-panel"
+  >
+
+    <div class="debug-header">
+      SWGOH ARENA TRACKER — DEBUG CONSOLE
+    </div>
+
+
+    <div
+      id="debugContent"
+      class="debug-content"
+    >
+      Ожидание...
+    </div>
 
   </div>
 
+
+  <!-- JSON -->
 
   <div class="json-section">
 
@@ -483,7 +628,6 @@
 
 
     <pre id="output"></pre>
-
 
   </div>
 
@@ -500,29 +644,147 @@ const PROXY_URL =
 
 const CHARACTER_NAMES = {
 
-  "GLLEIA":
+  GLLEIA:
     "Leia Organa",
 
-  "CAPTAINDROGAN":
+  CAPTAINDROGAN:
     "Captain Drogan",
 
-  "R2D2_LEGENDARY":
+  R2D2_LEGENDARY:
     "R2-D2",
 
-  "CAPTAINREX":
+  CAPTAINREX:
     "Captain Rex",
 
-  "C3POCHEWBACCA":
+  C3POCHEWBACCA:
     "C-3PO & Chewbacca"
 
 };
 
 
-function getBaseUnitId(unitDefId) {
+let debugLines = [];
+
+
+/* =====================================================
+   DEBUG
+===================================================== */
+
+function clearDebug() {
+
+  debugLines = [];
+
+  renderDebug();
+
+}
+
+
+function addDebug(
+  text,
+  type = ""
+) {
+
+  debugLines.push({
+    text,
+    type
+  });
+
+
+  renderDebug();
+
+}
+
+
+function renderDebug() {
+
+  const container =
+    document.getElementById(
+      "debugContent"
+    );
+
+
+  if (!debugLines.length) {
+
+    container.textContent =
+      "Ожидание...";
+
+    return;
+
+  }
+
+
+  container.innerHTML = "";
+
+
+  debugLines.forEach(
+    entry => {
+
+      const line =
+        document.createElement(
+          "div"
+        );
+
+
+      line.className =
+        "debug-entry";
+
+
+      if (
+        entry.type
+      ) {
+
+        line.classList.add(
+          `debug-${entry.type}`
+        );
+
+      }
+
+
+      line.textContent =
+        entry.text;
+
+
+      container.appendChild(
+        line
+      );
+
+    }
+  );
+
+
+  container.scrollTop =
+    container.scrollHeight;
+
+}
+
+
+function toggleDebug() {
+
+  const panel =
+    document.getElementById(
+      "debugPanel"
+    );
+
+
+  panel.style.display =
+    panel.style.display === "block"
+      ? "none"
+      : "block";
+
+}
+
+
+/* =====================================================
+   BASIC
+===================================================== */
+
+function getBaseUnitId(
+  unitDefId
+) {
 
   if (!unitDefId) {
     return "";
   }
+
 
   return unitDefId
     .split(":")[0]
@@ -531,10 +793,15 @@ function getBaseUnitId(unitDefId) {
 }
 
 
-function getCharacterName(unitDefId) {
+function getCharacterName(
+  unitDefId
+) {
 
   const id =
-    getBaseUnitId(unitDefId);
+    getBaseUnitId(
+      unitDefId
+    );
+
 
   return (
     CHARACTER_NAMES[id] ||
@@ -544,7 +811,18 @@ function getCharacterName(unitDefId) {
 }
 
 
-async function getCharacterImage(unitDefId) {
+/* =====================================================
+   IMAGE
+===================================================== */
+
+async function getCharacterImage(
+  unitDefId
+) {
+
+  addDebug(
+    `→ Ищем портрет: ${unitDefId}`
+  );
+
 
   try {
 
@@ -560,9 +838,10 @@ async function getCharacterImage(unitDefId) {
               "application/json"
           },
 
-          body: JSON.stringify({
-            unitDefId
-          })
+          body:
+            JSON.stringify({
+              unitDefId
+            })
 
         }
       );
@@ -572,14 +851,85 @@ async function getCharacterImage(unitDefId) {
       await response.json();
 
 
-    return data.image?.url || null;
+    if (
+      Array.isArray(
+        data.debug
+      )
+    ) {
+
+      data.debug.forEach(
+        line => {
+
+          let type = "";
+
+
+          if (
+            line.includes("✓")
+          ) {
+            type = "success";
+          }
+
+
+          if (
+            line.includes("❌") ||
+            line.includes("ERROR")
+          ) {
+            type = "error";
+          }
+
+
+          addDebug(
+            `  ${line}`,
+            type
+          );
+
+        }
+      );
+
+    }
+
+
+    if (
+      data.image?.url
+    ) {
+
+      addDebug(
+        `✓ IMAGE FOUND`,
+        "success"
+      );
+
+
+      addDebug(
+        `  file: ${data.image.file}`
+      );
+
+
+      addDebug(
+        `  score: ${data.image.score}`
+      );
+
+
+      return data.image.url;
+
+    }
+
+
+    addDebug(
+      `❌ IMAGE NOT FOUND`,
+      "error"
+    );
+
+
+    return null;
+
 
   } catch (error) {
 
-    console.error(
-      "Image error:",
-      error
+    addDebug(
+      `❌ Request error: ${error.message}`,
+      "error"
     );
+
 
     return null;
 
@@ -588,10 +938,19 @@ async function getCharacterImage(unitDefId) {
 }
 
 
+/* =====================================================
+   API
+===================================================== */
+
 async function requestData(
   endpoint,
   allyCode
 ) {
+
+  addDebug(
+    `API → ${endpoint}`
+  );
+
 
   const response =
     await fetch(
@@ -605,13 +964,14 @@ async function requestData(
             "application/json"
         },
 
-        body: JSON.stringify({
+        body:
+          JSON.stringify({
 
-          payload: {
-            allyCode
-          }
+            payload: {
+              allyCode
+            }
 
-        })
+          })
 
       }
     );
@@ -632,8 +992,7 @@ async function requestData(
   } catch {
 
     throw new Error(
-      "Сервер вернул не JSON:\n" +
-      text
+      "Сервер вернул не JSON"
     );
 
   }
@@ -650,26 +1009,35 @@ async function requestData(
   }
 
 
+  addDebug(
+    `API ← ${endpoint} ✓`,
+    "success"
+  );
+
+
   return data;
 
 }
 
 
+/* =====================================================
+   ALLY CODE
+===================================================== */
+
 function getAllyCode() {
 
-  const input =
-    document.getElementById(
-      "allyCode"
-    );
-
-
-  const allyCode =
-    input.value.trim();
+  const value =
+    document
+      .getElementById(
+        "allyCode"
+      )
+      .value
+      .trim();
 
 
   if (
     !/^[1-9]{9}$/.test(
-      allyCode
+      value
     )
   ) {
 
@@ -680,21 +1048,36 @@ function getAllyCode() {
   }
 
 
-  return allyCode;
+  return value;
 
 }
 
 
-function setStatus(text) {
+/* =====================================================
+   STATUS
+===================================================== */
 
-  document.getElementById(
-    "status"
-  ).textContent = text;
+function setStatus(
+  text
+) {
+
+  document
+    .getElementById(
+      "status"
+    )
+    .textContent =
+      text;
 
 }
 
 
-function showJSON(data) {
+/* =====================================================
+   JSON
+===================================================== */
+
+function showJSON(
+  data
+) {
 
   const output =
     document.getElementById(
@@ -722,12 +1105,33 @@ function showJSON(data) {
 }
 
 
+/* =====================================================
+   ARENA
+===================================================== */
+
 async function getArena() {
+
+  clearDebug();
 
   try {
 
     const allyCode =
       getAllyCode();
+
+
+    addDebug(
+      "════════════════════"
+    );
+
+
+    addDebug(
+      "START ARENA REQUEST"
+    );
+
+
+    addDebug(
+      `Ally Code: ${allyCode}`
+    );
 
 
     setStatus(
@@ -753,9 +1157,26 @@ async function getArena() {
     );
 
 
+    addDebug(
+      "════════════════════"
+    );
+
+
+    addDebug(
+      "DONE ✓",
+      "success"
+    );
+
+
   } catch (error) {
 
     console.error(error);
+
+
+    addDebug(
+      `❌ ERROR: ${error.message}`,
+      "error"
+    );
 
 
     setStatus(
@@ -768,7 +1189,14 @@ async function getArena() {
 }
 
 
+/* =====================================================
+   PLAYER
+===================================================== */
+
 async function getPlayer() {
+
+  clearDebug();
+
 
   try {
 
@@ -801,6 +1229,12 @@ async function getPlayer() {
     console.error(error);
 
 
+    addDebug(
+      `❌ ERROR: ${error.message}`,
+      "error"
+    );
+
+
     setStatus(
       "Ошибка: " +
       error.message
@@ -811,7 +1245,13 @@ async function getPlayer() {
 }
 
 
-async function renderArena(data) {
+/* =====================================================
+   RENDER ARENA
+===================================================== */
+
+async function renderArena(
+  data
+) {
 
   const profile =
     data.pvpProfile?.[0];
@@ -826,29 +1266,41 @@ async function renderArena(data) {
   }
 
 
-  document.getElementById(
-    "arenaCard"
-  ).style.display =
-    "block";
+  document
+    .getElementById(
+      "arenaCard"
+    )
+    .style.display =
+      "block";
 
 
-  document.getElementById(
-    "playerName"
-  ).textContent =
-    data.name || "Unknown";
+  document
+    .getElementById(
+      "playerName"
+    )
+    .textContent =
+      data.name ||
+      "Unknown";
 
 
-  document.getElementById(
-    "playerLevel"
-  ).textContent =
-    `Level ${data.level ?? "?"}`;
+  document
+    .getElementById(
+      "playerLevel"
+    )
+    .textContent =
+      `Level ${data.level ?? "?"}`;
 
 
-  document.getElementById(
-    "rank"
-  ).textContent =
-    "#" +
-    (profile.rank ?? "?");
+  document
+    .getElementById(
+      "rank"
+    )
+    .textContent =
+      "#" +
+      (
+        profile.rank ??
+        "?"
+      );
 
 
   const squad =
@@ -861,7 +1313,8 @@ async function renderArena(data) {
 
 
   const cells =
-    profile.squad?.cell || [];
+    profile.squad?.cell ||
+    [];
 
 
   cells.sort(
@@ -871,10 +1324,15 @@ async function renderArena(data) {
   );
 
 
-  /*
-   * Создаём все пять ячеек сразу.
-   */
-  for (const cell of cells) {
+  addDebug(
+    `Найдено юнитов: ${cells.length}`
+  );
+
+
+  for (
+    const cell
+    of cells
+  ) {
 
     const unitId =
       cell.unitDefId;
@@ -885,6 +1343,7 @@ async function renderArena(data) {
         "div"
       );
 
+
     character.className =
       "character";
 
@@ -893,6 +1352,7 @@ async function renderArena(data) {
       document.createElement(
         "img"
       );
+
 
     image.className =
       "portrait loading";
@@ -924,6 +1384,7 @@ async function renderArena(data) {
       image
     );
 
+
     character.appendChild(
       name
     );
@@ -934,10 +1395,6 @@ async function renderArena(data) {
     );
 
 
-    /*
-     * Теперь отдельно запрашиваем
-     * картинку через proxy.
-     */
     const imageUrl =
       await getCharacterImage(
         unitId
@@ -954,13 +1411,38 @@ async function renderArena(data) {
       image.src =
         imageUrl;
 
+
+      image.onload =
+        () => {
+
+          addDebug(
+            `✓ Браузер загрузил ${getCharacterName(unitId)}`,
+            "success"
+          );
+
+        };
+
+
+      image.onerror =
+        () => {
+
+          image.classList.add(
+            "error"
+          );
+
+
+          addDebug(
+            `❌ Браузер НЕ смог загрузить ${imageUrl}`,
+            "error"
+          );
+
+        };
+
     } else {
 
-      image.alt =
-        "Портрет не найден";
-
-      image.style.opacity =
-        "0.25";
+      image.classList.add(
+        "error"
+      );
 
     }
 
@@ -969,21 +1451,24 @@ async function renderArena(data) {
 }
 
 
+/* =====================================================
+   COPY
+===================================================== */
+
 async function copyJSON() {
 
-  const output =
-    document.getElementById(
-      "output"
-    );
-
-
   const text =
-    output.textContent;
+    document
+      .getElementById(
+        "output"
+      )
+      .textContent;
 
 
   try {
 
-    await navigator.clipboard
+    await navigator
+      .clipboard
       .writeText(text);
 
 
@@ -1027,7 +1512,6 @@ async function copyJSON() {
   }
 
 }
-
 
 </script>
 
