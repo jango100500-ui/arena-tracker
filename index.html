@@ -23,6 +23,7 @@
       min-height: 100%;
       background: #0d1015;
       color: #f2f4f7;
+
       font-family:
         -apple-system,
         BlinkMacSystemFont,
@@ -34,7 +35,7 @@
     }
 
     body {
-      padding: 20px;
+      padding: 18px;
     }
 
     button,
@@ -48,61 +49,64 @@
 
     .container {
       width: 100%;
-      max-width: 1100px;
+      max-width: 1000px;
       margin: 0 auto;
     }
 
-    /* -------------------------------------------------- */
     /* HEADER */
-    /* -------------------------------------------------- */
 
     .header {
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
 
     .title {
       margin: 0;
-      font-size: 28px;
+
+      font-size: 27px;
+      line-height: 1.15;
       font-weight: 800;
       letter-spacing: -0.5px;
     }
 
     .subtitle {
       margin-top: 5px;
-      color: #8f98a8;
-      font-size: 14px;
+
+      color: #858e9d;
+      font-size: 13px;
     }
 
-    /* -------------------------------------------------- */
-    /* INPUT */
-    /* -------------------------------------------------- */
+    /* SEARCH */
 
     .search-card {
+      padding: 14px;
+
       background: #151a22;
       border: 1px solid #242b36;
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 16px;
+      border-radius: 15px;
+
+      margin-bottom: 14px;
     }
 
     .input-row {
       display: flex;
-      gap: 10px;
+      gap: 9px;
     }
 
     .ally-input {
       flex: 1;
       min-width: 0;
-      height: 48px;
+
+      height: 47px;
       padding: 0 14px;
 
       border: 1px solid #303846;
-      border-radius: 12px;
+      border-radius: 11px;
 
       background: #0d1117;
-      color: #ffffff;
+      color: #fff;
 
       outline: none;
+      font-size: 15px;
     }
 
     .ally-input:focus {
@@ -110,62 +114,43 @@
     }
 
     .button {
-      height: 48px;
+      height: 47px;
       padding: 0 18px;
 
       border: 0;
-      border-radius: 12px;
+      border-radius: 11px;
 
-      background: #e7ebf0;
+      background: #e8ecf1;
       color: #11151b;
 
-      font-weight: 700;
+      font-weight: 750;
       white-space: nowrap;
     }
 
     .button:active {
-      transform: scale(0.98);
-    }
-
-    .button.secondary {
-      background: #242b36;
-      color: #e6eaf0;
-    }
-
-    .button.small {
-      height: 40px;
-      padding: 0 13px;
-      font-size: 13px;
+      transform: scale(.98);
     }
 
     .button:disabled {
-      opacity: 0.5;
+      opacity: .55;
       cursor: default;
     }
 
-    .actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 10px;
-      flex-wrap: wrap;
-    }
-
-    /* -------------------------------------------------- */
     /* STATUS */
-    /* -------------------------------------------------- */
 
     .status {
       display: none;
-      margin-bottom: 16px;
 
-      padding: 12px 14px;
-      border-radius: 12px;
+      padding: 11px 13px;
+      margin-bottom: 14px;
+
+      border-radius: 11px;
 
       background: #151a22;
       border: 1px solid #242b36;
 
       color: #aeb6c4;
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1.45;
     }
 
@@ -174,224 +159,146 @@
     }
 
     .status.error {
-      border-color: #713b42;
-      color: #ffb4bc;
-      background: #211316;
+      background: #211417;
+      border-color: #6e3941;
+      color: #ffb7be;
     }
 
     .status.success {
-      border-color: #385f47;
-      color: #b7e5c4;
       background: #111b15;
+      border-color: #385d46;
+      color: #b9e6c6;
     }
 
-    /* -------------------------------------------------- */
-    /* PLAYER CARD */
-    /* -------------------------------------------------- */
-
-    .player-card {
-      display: none;
-
-      background: #151a22;
-      border: 1px solid #242b36;
-      border-radius: 16px;
-
-      padding: 18px;
-      margin-bottom: 16px;
-    }
-
-    .player-card.visible {
-      display: block;
-    }
-
-    .player-top {
-      display: flex;
-      justify-content: space-between;
-      gap: 15px;
-      align-items: flex-start;
-    }
-
-    .player-name {
-      font-size: 23px;
-      font-weight: 800;
-      margin: 0;
-    }
-
-    .player-meta {
-      margin-top: 5px;
-      color: #8f98a8;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .ratings {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 16px;
-    }
-
-    .rating {
-      min-width: 150px;
-      padding: 12px;
-
-      border-radius: 12px;
-      background: #0e131a;
-      border: 1px solid #242b36;
-    }
-
-    .rating-label {
-      color: #818b9b;
-      font-size: 12px;
-      margin-bottom: 4px;
-    }
-
-    .rating-value {
-      font-size: 22px;
-      font-weight: 800;
-    }
-
-    /* -------------------------------------------------- */
-    /* SECTION */
-    /* -------------------------------------------------- */
+    /* CARD */
 
     .section {
       display: none;
 
+      padding: 15px;
+      margin-bottom: 14px;
+
       background: #151a22;
       border: 1px solid #242b36;
-      border-radius: 16px;
-
-      padding: 16px;
-      margin-bottom: 16px;
+      border-radius: 15px;
     }
 
     .section.visible {
       display: block;
     }
 
-    .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-
-      margin-bottom: 14px;
-    }
-
     .section-title {
       margin: 0;
-      font-size: 18px;
+
+      font-size: 17px;
       font-weight: 800;
     }
 
     .section-subtitle {
-      color: #818b9b;
-      font-size: 12px;
       margin-top: 3px;
-    }
 
-    /* -------------------------------------------------- */
-    /* ARENA TABLE */
-    /* -------------------------------------------------- */
-
-    .arena-list {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-    }
-
-    .arena-row {
-      display: grid;
-      grid-template-columns: 54px minmax(0, 1fr) auto;
-
-      align-items: center;
-      gap: 10px;
-
-      min-height: 58px;
-      padding: 7px 10px;
-
-      background: #0e131a;
-      border: 1px solid #242b36;
-      border-radius: 12px;
-    }
-
-    .arena-row.me {
-      background: #1b2029;
-      border-color: #697384;
-    }
-
-    .arena-rank {
-      text-align: center;
-      font-size: 18px;
-      font-weight: 800;
-      color: #b8c0cc;
-    }
-
-    .arena-player {
-      min-width: 0;
-    }
-
-    .arena-name {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-
-      font-size: 15px;
-      font-weight: 700;
-    }
-
-    .arena-ally {
-      margin-top: 2px;
-      color: #727c8d;
+      color: #7e8796;
       font-size: 11px;
     }
 
-    .arena-score {
-      text-align: right;
-      color: #9ca6b5;
-      font-size: 12px;
+    /* PLAYER */
+
+    .player-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 15px;
     }
 
-    /* -------------------------------------------------- */
+    .player-name {
+      margin: 0;
+
+      font-size: 23px;
+      line-height: 1.2;
+      font-weight: 800;
+    }
+
+    .player-meta {
+      margin-top: 6px;
+
+      color: #8b95a5;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .ratings {
+      display: grid;
+
+      grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+      gap: 9px;
+
+      margin-top: 15px;
+    }
+
+    .rating {
+      padding: 11px;
+
+      background: #0e131a;
+      border: 1px solid #242b36;
+      border-radius: 11px;
+    }
+
+    .rating-label {
+      color: #788292;
+      font-size: 11px;
+    }
+
+    .rating-value {
+      margin-top: 3px;
+
+      font-size: 21px;
+      font-weight: 800;
+    }
+
     /* SQUAD */
-    /* -------------------------------------------------- */
 
     .squad {
       display: grid;
+
       grid-template-columns:
         repeat(5, minmax(0, 1fr));
 
-      gap: 10px;
+      gap: 9px;
+
+      margin-top: 13px;
     }
 
     .unit-card {
       min-width: 0;
       overflow: hidden;
 
+      padding: 6px;
+
       background: #0e131a;
       border: 1px solid #242b36;
-      border-radius: 13px;
-
-      padding: 8px;
+      border-radius: 11px;
     }
 
     .unit-image-wrap {
       position: relative;
 
       width: 100%;
-      aspect-ratio: 1 / 1;
+      aspect-ratio: 1;
 
       overflow: hidden;
-      border-radius: 10px;
+
+      border-radius: 8px;
 
       background: #080b10;
     }
 
     .unit-image {
+      display: block;
+
       width: 100%;
       height: 100%;
-      display: block;
 
       object-fit: cover;
     }
@@ -404,192 +311,120 @@
       align-items: center;
       justify-content: center;
 
-      color: #596271;
-      font-size: 22px;
+      color: #555f6f;
+      font-size: 20px;
     }
 
     .unit-name {
-      margin-top: 7px;
+      margin-top: 6px;
 
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
 
-      font-size: 11px;
+      color: #c3cad4;
+      font-size: 10px;
       font-weight: 700;
-      color: #c4cbd5;
     }
 
-    .unit-id {
-      margin-top: 2px;
-
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-
-      color: #626c7c;
-      font-size: 9px;
-    }
-
-    /* -------------------------------------------------- */
     /* DATACRON */
-    /* -------------------------------------------------- */
 
-    .datacron {
-      padding: 14px;
+    .datacron-box {
+      margin-top: 13px;
+      padding: 12px;
 
       background: #0e131a;
       border: 1px solid #242b36;
-      border-radius: 12px;
+      border-radius: 11px;
     }
 
     .datacron-id {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       word-break: break-all;
     }
 
     .datacron-meta {
-      margin-top: 5px;
-      color: #818b9b;
-      font-size: 12px;
+      margin-top: 4px;
+
+      color: #7f8998;
+      font-size: 11px;
     }
 
     .affixes {
       display: flex;
       flex-direction: column;
-      gap: 7px;
-      margin-top: 12px;
+      gap: 6px;
+
+      margin-top: 10px;
     }
 
     .affix {
-      padding: 9px 10px;
-      border-radius: 9px;
+      padding: 8px 9px;
+
+      border-radius: 8px;
+
       background: #151b24;
-      color: #abb3c0;
-      font-size: 12px;
+
+      color: #aab3c0;
+      font-size: 11px;
       line-height: 1.4;
     }
 
-    /* -------------------------------------------------- */
-    /* DEBUG */
-    /* -------------------------------------------------- */
-
-    .debug {
-      display: none;
-
-      background: #090c11;
-      border: 1px solid #242b36;
-      border-radius: 16px;
-
-      padding: 14px;
-      margin-bottom: 16px;
-    }
-
-    .debug.visible {
-      display: block;
-    }
-
-    .debug-title {
-      font-size: 13px;
-      font-weight: 800;
-      margin-bottom: 8px;
-    }
-
-    .debug-console {
-      margin: 0;
-
-      max-height: 330px;
-      overflow: auto;
-
-      padding: 12px;
-
-      border-radius: 10px;
-      background: #05070a;
-
-      color: #8f9aaa;
-      font-family:
-        ui-monospace,
-        SFMono-Regular,
-        Menlo,
-        Monaco,
-        Consolas,
-        monospace;
-
-      font-size: 11px;
-      line-height: 1.5;
-
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    /* -------------------------------------------------- */
-    /* EMPTY */
-    /* -------------------------------------------------- */
+    /* ERROR */
 
     .empty {
-      padding: 30px 15px;
+      padding: 24px 10px;
 
       text-align: center;
 
-      color: #687384;
-      font-size: 13px;
+      color: #687383;
+      font-size: 12px;
     }
 
-    /* -------------------------------------------------- */
     /* MOBILE */
-    /* -------------------------------------------------- */
 
-    @media (max-width: 650px) {
+    @media (max-width: 600px) {
+
       body {
         padding: 12px;
-      }
-
-      .title {
-        font-size: 24px;
       }
 
       .input-row {
         flex-direction: column;
       }
 
-      .input-row .button {
+      .button {
         width: 100%;
       }
 
-      .player-top {
-        flex-direction: column;
+      .ratings {
+        grid-template-columns:
+          repeat(3, minmax(0, 1fr));
       }
 
       .rating {
-        min-width: 0;
-        flex: 1;
+        padding: 9px 7px;
       }
 
-      .squad {
-        gap: 6px;
-      }
-
-      .unit-card {
-        padding: 5px;
-        border-radius: 10px;
-      }
-
-      .unit-name {
+      .rating-label {
         font-size: 9px;
       }
 
-      .unit-id {
+      .rating-value {
+        font-size: 18px;
+      }
+
+      .squad {
+        gap: 5px;
+      }
+
+      .unit-card {
+        padding: 4px;
+      }
+
+      .unit-name {
         font-size: 8px;
-      }
-
-      .arena-row {
-        grid-template-columns: 42px minmax(0, 1fr) auto;
-        padding: 6px 7px;
-      }
-
-      .arena-name {
-        font-size: 13px;
       }
     }
   </style>
@@ -602,11 +437,15 @@
   <!-- HEADER -->
 
   <div class="header">
-    <h1 class="title">SWGOH Arena Tracker</h1>
+
+    <h1 class="title">
+      SWGOH Arena Tracker
+    </h1>
 
     <div class="subtitle">
-      Squad Arena · Fleet Arena · Squad · Datacron
+      Squad Arena · Squad · Datacron
     </div>
+
   </div>
 
 
@@ -635,38 +474,6 @@
 
     </div>
 
-    <div class="actions">
-
-      <button
-        class="button secondary small"
-        onclick="loadPlayer()"
-      >
-        Получить профиль
-      </button>
-
-      <button
-        class="button secondary small"
-        onclick="testPortraits()"
-      >
-        Test portraits
-      </button>
-
-      <button
-        class="button secondary small"
-        onclick="testGameData()"
-      >
-        Test game data
-      </button>
-
-      <button
-        class="button secondary small"
-        onclick="toggleDebug()"
-      >
-        Debug
-      </button>
-
-    </div>
-
   </div>
 
 
@@ -681,11 +488,11 @@
   <!-- PLAYER -->
 
   <div
-    id="playerCard"
-    class="player-card"
+    id="playerSection"
+    class="section"
   >
 
-    <div class="player-top">
+    <div class="player-head">
 
       <div>
 
@@ -762,38 +569,6 @@
   </div>
 
 
-  <!-- ARENA -->
-
-  <div
-    id="arenaSection"
-    class="section"
-  >
-
-    <div class="section-header">
-
-      <div>
-
-        <h2 class="section-title">
-          Squad Arena
-        </h2>
-
-        <div class="section-subtitle">
-          Текущий топ игроков
-        </div>
-
-      </div>
-
-    </div>
-
-
-    <div
-      id="arenaList"
-      class="arena-list"
-    ></div>
-
-  </div>
-
-
   <!-- SQUAD -->
 
   <div
@@ -801,22 +576,13 @@
     class="section"
   >
 
-    <div class="section-header">
+    <h2 class="section-title">
+      Squad
+    </h2>
 
-      <div>
-
-        <h2 class="section-title">
-          Squad
-        </h2>
-
-        <div class="section-subtitle">
-          Защищающаяся команда
-        </div>
-
-      </div>
-
+    <div class="section-subtitle">
+      Текущая команда
     </div>
-
 
     <div
       id="squad"
@@ -833,46 +599,18 @@
     class="section"
   >
 
-    <div class="section-header">
+    <h2 class="section-title">
+      Datacron
+    </h2>
 
-      <div>
-
-        <h2 class="section-title">
-          Datacron
-        </h2>
-
-        <div class="section-subtitle">
-          Активный Datacron
-        </div>
-
-      </div>
-
+    <div class="section-subtitle">
+      Активный Datacron
     </div>
-
 
     <div
       id="datacron"
-      class="datacron"
+      class="datacron-box"
     ></div>
-
-  </div>
-
-
-  <!-- DEBUG -->
-
-  <div
-    id="debug"
-    class="debug"
-  >
-
-    <div class="debug-title">
-      Debug Console
-    </div>
-
-    <pre
-      id="debugConsole"
-      class="debug-console"
-    ></pre>
 
   </div>
 
@@ -882,14 +620,7 @@
 <script>
 
   // ==========================================================
-  // CONFIG
-  // ==========================================================
-
-  const API_BASE = "";
-
-
-  // ==========================================================
-  // ELEMENTS
+  // HELPERS
   // ==========================================================
 
   const allyCodeInput =
@@ -898,67 +629,9 @@
   const statusElement =
     document.getElementById("status");
 
-  const debugElement =
-    document.getElementById("debug");
+  const arenaButton =
+    document.getElementById("arenaButton");
 
-  const debugConsole =
-    document.getElementById("debugConsole");
-
-
-  // ==========================================================
-  // DEBUG
-  // ==========================================================
-
-  function debug(...args) {
-
-    const line =
-      args
-        .map(value => {
-
-          if (
-            typeof value === "string"
-          ) {
-            return value;
-          }
-
-          try {
-            return JSON.stringify(
-              value,
-              null,
-              2
-            );
-          } catch {
-            return String(value);
-          }
-
-        })
-        .join(" ");
-
-    console.log(...args);
-
-    debugConsole.textContent +=
-      line + "\n";
-
-    debugConsole.scrollTop =
-      debugConsole.scrollHeight;
-  }
-
-
-  function clearDebug() {
-    debugConsole.textContent = "";
-  }
-
-
-  function toggleDebug() {
-    debugElement.classList.toggle(
-      "visible"
-    );
-  }
-
-
-  // ==========================================================
-  // STATUS
-  // ==========================================================
 
   function setStatus(
     message,
@@ -975,15 +648,67 @@
 
   function clearStatus() {
 
-    statusElement.textContent = "";
+    statusElement.textContent =
+      "";
 
     statusElement.className =
       "status";
   }
 
 
+  function escapeHtml(value) {
+
+    return String(
+      value ?? ""
+    )
+      .replace(
+        /&/g,
+        "&amp;"
+      )
+      .replace(
+        /</g,
+        "&lt;"
+      )
+      .replace(
+        />/g,
+        "&gt;"
+      )
+      .replace(
+        /"/g,
+        "&quot;"
+      )
+      .replace(
+        /'/g,
+        "&#039;"
+      );
+  }
+
+
+  function getAllyCode() {
+
+    const value =
+      allyCodeInput.value
+        .trim()
+        .replace(/\s+/g, "");
+
+    if (!value) {
+      throw new Error(
+        "Введите Ally Code."
+      );
+    }
+
+    if (!/^\d+$/.test(value)) {
+      throw new Error(
+        "Ally Code должен содержать только цифры."
+      );
+    }
+
+    return value;
+  }
+
+
   // ==========================================================
-  // POST
+  // API
   // ==========================================================
 
   async function post(
@@ -991,15 +716,16 @@
     body
   ) {
 
-    debug(
+    console.log(
       "POST",
       path,
       body
     );
 
+
     const response =
       await fetch(
-        API_BASE + path,
+        path,
         {
           method: "POST",
 
@@ -1013,110 +739,82 @@
         }
       );
 
-    const text =
+
+    const raw =
       await response.text();
+
 
     let data;
 
     try {
       data =
-        JSON.parse(text);
+        JSON.parse(raw);
     } catch {
-      data = text;
+      data =
+        raw;
     }
 
-    debug(
+
+    console.log(
       "RESPONSE",
       response.status,
       data
     );
 
-    if (!response.ok) {
 
-      let message;
+    if (!response.ok) {
 
       if (
         data &&
-        typeof data === "object"
+        typeof data === "object" &&
+        data.error
       ) {
-        message =
-          data.error ||
-          JSON.stringify(data);
-      } else {
-        message =
-          String(data);
+
+        throw new Error(
+          data.error
+        );
       }
 
+
       throw new Error(
-        `${response.status}: ${message}`
+        `Сервер вернул ошибку ${response.status}.`
       );
     }
+
 
     return data;
   }
 
 
   // ==========================================================
-  // ALLY CODE
-  // ==========================================================
-
-  function getAllyCode() {
-
-    const value =
-      allyCodeInput.value
-        .trim()
-        .replace(/\s+/g, "");
-
-    if (!value) {
-
-      throw new Error(
-        "Введите Ally Code"
-      );
-    }
-
-    if (!/^\d+$/.test(value)) {
-
-      throw new Error(
-        "Ally Code должен содержать только цифры"
-      );
-    }
-
-    return value;
-  }
-
-
-  // ==========================================================
-  // LOAD ARENA
+  // MAIN
   // ==========================================================
 
   async function loadArena() {
-
-    clearDebug();
 
     try {
 
       const allyCode =
         getAllyCode();
 
+
+      arenaButton.disabled =
+        true;
+
+
       setStatus(
         "Получаю данные Arena…"
       );
 
-      document
-        .getElementById("arenaButton")
-        .disabled = true;
 
+      /*
+        ЕДИНСТВЕННЫЙ запрос к Comlink.
 
-      // ВАЖНО:
-      // Здесь отправляем allyCode.
-      // Proxy сам превращает его в:
-      //
-      // {
-      //   payload: {
-      //     allyCode: "...",
-      //     playerDetailsOnly: false
-      //   }
-      // }
+        Никакого /player.
+
+        /playerArena уже содержит
+        нужную информацию о игроке.
+      */
 
       const data =
         await post(
@@ -1127,172 +825,100 @@
         );
 
 
-      debug(
+      console.log(
         "ARENA DATA",
         data
       );
 
 
-      renderArena(data);
-
-      renderPlayerFromArena(data);
-
-      renderSquadFromArena(data);
-
-      renderDatacronFromArena(data);
+      renderEverything(
+        data,
+        allyCode
+      );
 
 
       setStatus(
-        "Arena успешно загружена",
+        "Arena успешно загружена.",
         "success"
       );
 
     } catch (error) {
 
-      console.error(error);
-
-      debug(
-        "ERROR",
-        error.message
+      console.error(
+        "Arena error:",
+        error
       );
 
+
       setStatus(
-        "Ошибка: " +
-        error.message,
+        error.message ||
+        "Не удалось получить данные.",
         "error"
       );
 
     } finally {
 
-      document
-        .getElementById("arenaButton")
-        .disabled = false;
+      arenaButton.disabled =
+        false;
     }
   }
 
 
   // ==========================================================
-  // LOAD PLAYER
+  // RENDER EVERYTHING
   // ==========================================================
 
-  async function loadPlayer() {
-
-    clearDebug();
-
-    try {
-
-      const allyCode =
-        getAllyCode();
-
-      setStatus(
-        "Получаю профиль…"
-      );
-
-
-      const data =
-        await post(
-          "/player",
-          {
-            allyCode
-          }
-        );
-
-
-      debug(
-        "PLAYER DATA",
-        data
-      );
-
-
-      renderPlayer(
-        data
-      );
-
-
-      setStatus(
-        "Профиль успешно загружен",
-        "success"
-      );
-
-    } catch (error) {
-
-      console.error(error);
-
-      debug(
-        "ERROR",
-        error.message
-      );
-
-      setStatus(
-        "Ошибка: " +
-        error.message,
-        "error"
-      );
-    }
-  }
-
-
-  // ==========================================================
-  // PLAYER FROM ARENA
-  // ==========================================================
-
-  function renderPlayerFromArena(
-    data
+  function renderEverything(
+    data,
+    allyCode
   ) {
 
-    const player =
-      data?.player ||
-      data?.playerData ||
-      data;
-
-
     renderPlayer(
-      player,
+      data,
+      allyCode
+    );
+
+    renderSquad(
+      data
+    );
+
+    renderDatacron(
       data
     );
   }
 
 
   // ==========================================================
-  // PLAYER RENDER
+  // PLAYER
   // ==========================================================
 
   function renderPlayer(
     data,
-    arenaData = null
+    allyCode
   ) {
 
-    if (!data) {
-      return;
-    }
-
-
-    const playerCard =
+    const section =
       document.getElementById(
-        "playerCard"
+        "playerSection"
       );
 
-    playerCard.classList.add(
+
+    section.classList.add(
       "visible"
     );
 
 
     const name =
-      data.name ||
-      data.playerName ||
-      data.displayName ||
-      "Unknown player";
+      data?.name ||
+      data?.player?.name ||
+      data?.playerData?.name ||
+      "Unknown";
 
 
     const level =
-      data.level ??
-      data.playerLevel ??
-      "—";
-
-
-    const allyCode =
-      data.allyCode ??
-      data.allycode ??
+      data?.level ??
+      data?.player?.level ??
+      data?.playerData?.level ??
       "—";
 
 
@@ -1308,6 +934,14 @@
       `Level ${level} · Ally Code ${allyCode}`;
 
 
+    const profiles =
+      Array.isArray(
+        data?.pvpProfile
+      )
+        ? data.pvpProfile
+        : [];
+
+
     let squadRank =
       "—";
 
@@ -1315,25 +949,19 @@
       "—";
 
 
-    const profiles =
-      arenaData?.pvpProfile ||
-      data?.pvpProfile ||
-      [];
+    if (profiles[0]) {
+
+      squadRank =
+        profiles[0].rank ??
+        "—";
+    }
 
 
-    if (Array.isArray(profiles)) {
+    if (profiles[1]) {
 
-      if (profiles[0]) {
-        squadRank =
-          profiles[0].rank ??
-          "—";
-      }
-
-      if (profiles[1]) {
-        fleetRank =
-          profiles[1].rank ??
-          "—";
-      }
+      fleetRank =
+        profiles[1].rank ??
+        "—";
     }
 
 
@@ -1353,7 +981,7 @@
       data?.playerRating
         ?.playerSkillRating
         ?.skillRating ??
-      arenaData?.playerRating
+      data?.player?.playerRating
         ?.playerSkillRating
         ?.skillRating ??
       "—";
@@ -1367,250 +995,19 @@
 
 
   // ==========================================================
-  // FIND ARENA CELLS
-  // ==========================================================
-
-  function findArenaCells(
-    data
-  ) {
-
-    const cells =
-      data?.pvpProfile?.[0]
-        ?.squad?.cell;
-
-    if (
-      Array.isArray(cells)
-    ) {
-      return [...cells]
-        .sort(
-          (a, b) =>
-            Number(
-              a.cellIndex ?? 0
-            ) -
-            Number(
-              b.cellIndex ?? 0
-            )
-        );
-    }
-
-    return [];
-  }
-
-
-  // ==========================================================
-  // ARENA RENDER
-  // ==========================================================
-
-  function renderArena(
-    data
-  ) {
-
-    const section =
-      document.getElementById(
-        "arenaSection"
-      );
-
-    const list =
-      document.getElementById(
-        "arenaList"
-      );
-
-
-    section.classList.add(
-      "visible"
-    );
-
-
-    list.innerHTML = "";
-
-
-    /*
-      Comlink may return different
-      structures depending on version.
-
-      Try several common locations.
-    */
-
-    let players =
-      data?.pvpProfile?.[0]
-        ?.rankings ||
-      data?.pvpProfile?.[0]
-        ?.player ||
-      data?.arena ||
-      data?.players ||
-      [];
-
-
-    if (
-      !Array.isArray(players)
-    ) {
-
-      /*
-        If the current player arena
-        response contains only the
-        current player's profile,
-        display that player instead.
-      */
-
-      const name =
-        data?.name ||
-        data?.playerName;
-
-      const rank =
-        data?.pvpProfile?.[0]?.rank;
-
-      if (
-        name ||
-        rank
-      ) {
-
-        players = [
-          {
-            name,
-            rank,
-            allyCode:
-              data?.allyCode
-          }
-        ];
-
-      } else {
-
-        list.innerHTML =
-          `
-          <div class="empty">
-            Arena data received,
-            but ranking list was not
-            included in the response.
-          </div>
-          `;
-
-        return;
-      }
-    }
-
-
-    if (!players.length) {
-
-      list.innerHTML =
-        `
-        <div class="empty">
-          No arena players found.
-        </div>
-        `;
-
-      return;
-    }
-
-
-    const ownAllyCode =
-      String(
-        data?.allyCode ??
-        data?.player?.allyCode ??
-        ""
-      );
-
-
-    for (
-      const player of players
-    ) {
-
-      const row =
-        document.createElement(
-          "div"
-        );
-
-      row.className =
-        "arena-row";
-
-
-      const rank =
-        player.rank ??
-        player.currentRank ??
-        player.position ??
-        "—";
-
-
-      const name =
-        player.name ??
-        player.playerName ??
-        player.displayName ??
-        "Unknown";
-
-
-      const allyCode =
-        player.allyCode ??
-        player.allycode ??
-        "";
-
-
-      if (
-        ownAllyCode &&
-        String(allyCode) ===
-          ownAllyCode
-      ) {
-        row.classList.add(
-          "me"
-        );
-      }
-
-
-      row.innerHTML =
-        `
-        <div class="arena-rank">
-          ${escapeHtml(rank)}
-        </div>
-
-        <div class="arena-player">
-
-          <div class="arena-name">
-            ${escapeHtml(name)}
-          </div>
-
-          ${
-            allyCode
-              ? `
-                <div class="arena-ally">
-                  Ally Code ${escapeHtml(allyCode)}
-                </div>
-              `
-              : ""
-          }
-
-        </div>
-
-        <div class="arena-score">
-          ${player.skillRating ??
-            player.rating ??
-            ""}
-        </div>
-        `;
-
-
-      list.appendChild(
-        row
-      );
-    }
-  }
-
-
-  // ==========================================================
   // SQUAD
   // ==========================================================
 
-  function renderSquadFromArena(
+  function renderSquad(
     data
   ) {
-
-    const cells =
-      findArenaCells(data);
-
 
     const section =
       document.getElementById(
         "squadSection"
       );
 
-    const squad =
+    const container =
       document.getElementById(
         "squad"
       );
@@ -1621,15 +1018,24 @@
     );
 
 
-    squad.innerHTML = "";
+    container.innerHTML =
+      "";
 
 
-    if (!cells.length) {
+    const cells =
+      data?.pvpProfile?.[0]
+        ?.squad?.cell;
 
-      squad.innerHTML =
+
+    if (
+      !Array.isArray(cells) ||
+      cells.length === 0
+    ) {
+
+      container.innerHTML =
         `
         <div class="empty">
-          Squad не найдена в ответе Comlink.
+          Команда не найдена.
         </div>
         `;
 
@@ -1637,19 +1043,30 @@
     }
 
 
+    const sorted =
+      [...cells].sort(
+        (a, b) =>
+          Number(
+            a.cellIndex ?? 0
+          ) -
+          Number(
+            b.cellIndex ?? 0
+          )
+      );
+
+
     for (
-      const cell of cells
+      const cell of sorted
     ) {
 
       const unitDefId =
-        cell.unitDefId ||
-        cell.unit?.unitDefId ||
-        cell.definitionId ||
+        cell?.unitDefId ||
+        cell?.unit?.unitDefId ||
         "";
 
 
-      addUnitCard(
-        squad,
+      createUnitCard(
+        container,
         unitDefId
       );
     }
@@ -1657,10 +1074,10 @@
 
 
   // ==========================================================
-  // UNIT CARD
+  // UNIT
   // ==========================================================
 
-  function addUnitCard(
+  function createUnitCard(
     container,
     unitDefId
   ) {
@@ -1683,21 +1100,12 @@
       "unit-image-wrap";
 
 
-    const placeholder =
-      document.createElement(
-        "div"
-      );
-
-    placeholder.className =
-      "unit-placeholder";
-
-    placeholder.textContent =
-      "…";
-
-
-    imageWrap.appendChild(
-      placeholder
-    );
+    imageWrap.innerHTML =
+      `
+      <div class="unit-placeholder">
+        …
+      </div>
+      `;
 
 
     const name =
@@ -1714,28 +1122,12 @@
       );
 
 
-    const id =
-      document.createElement(
-        "div"
-      );
-
-    id.className =
-      "unit-id";
-
-    id.textContent =
-      unitDefId;
-
-
     card.appendChild(
       imageWrap
     );
 
     card.appendChild(
       name
-    );
-
-    card.appendChild(
-      id
     );
 
 
@@ -1745,94 +1137,105 @@
 
 
     if (!unitDefId) {
-      placeholder.textContent =
-        "?";
       return;
     }
 
 
-    getCharacterImage(
-      unitDefId
-    )
-      .then(result => {
-
-        if (
-          result?.ok &&
-          result.url
-        ) {
-
-          const img =
-            document.createElement(
-              "img"
-            );
-
-          img.className =
-            "unit-image";
-
-          img.alt =
-            prettyUnitName(
-              unitDefId
-            );
-
-          img.src =
-            result.url;
-
-
-          img.onerror = () => {
-
-            imageWrap.innerHTML =
-              `
-              <div class="unit-placeholder">
-                ?
-              </div>
-              `;
-          };
-
-
-          imageWrap.innerHTML = "";
-
-          imageWrap.appendChild(
-            img
-          );
-
-        } else {
-
-          placeholder.textContent =
-            "?";
-        }
-
-      })
-      .catch(error => {
-
-        debug(
-          "Portrait error",
-          unitDefId,
-          error.message
-        );
-
-        placeholder.textContent =
-          "?";
-      });
+    loadPortrait(
+      unitDefId,
+      imageWrap
+    );
   }
 
 
-  // ==========================================================
-  // CHARACTER IMAGE
-  // ==========================================================
-
-  async function getCharacterImage(
-    unitDefId
+  async function loadPortrait(
+    unitDefId,
+    imageWrap
   ) {
 
-    const result =
-      await post(
-        "/characterImage",
-        {
+    try {
+
+      const result =
+        await post(
+          "/characterImage",
+          {
+            unitDefId
+          }
+        );
+
+
+      if (
+        !result?.ok ||
+        !result?.url
+      ) {
+
+        imageWrap.innerHTML =
+          `
+          <div class="unit-placeholder">
+            ?
+          </div>
+          `;
+
+        return;
+      }
+
+
+      const image =
+        document.createElement(
+          "img"
+        );
+
+
+      image.className =
+        "unit-image";
+
+
+      image.alt =
+        prettyUnitName(
           unitDefId
-        }
+        );
+
+
+      image.src =
+        result.url;
+
+
+      image.onerror =
+        () => {
+
+          imageWrap.innerHTML =
+            `
+            <div class="unit-placeholder">
+              ?
+            </div>
+            `;
+        };
+
+
+      imageWrap.innerHTML =
+        "";
+
+
+      imageWrap.appendChild(
+        image
       );
 
-    return result;
+    } catch (error) {
+
+      console.error(
+        "Portrait error:",
+        unitDefId,
+        error
+      );
+
+
+      imageWrap.innerHTML =
+        `
+        <div class="unit-placeholder">
+          ?
+        </div>
+        `;
+    }
   }
 
 
@@ -1840,17 +1243,9 @@
   // DATACRON
   // ==========================================================
 
-  function renderDatacronFromArena(
+  function renderDatacron(
     data
   ) {
-
-    const datacron =
-      data?.pvpProfile?.[0]
-        ?.squad?.datacron ||
-      data?.pvpProfile?.[0]
-        ?.datacron ||
-      data?.datacron;
-
 
     const section =
       document.getElementById(
@@ -1863,13 +1258,22 @@
       );
 
 
+    const datacron =
+      data?.pvpProfile?.[0]
+        ?.squad?.datacron ||
+      data?.pvpProfile?.[0]
+        ?.datacron ||
+      data?.datacron;
+
+
     if (!datacron) {
 
       section.classList.remove(
         "visible"
       );
 
-      container.innerHTML = "";
+      container.innerHTML =
+        "";
 
       return;
     }
@@ -1895,24 +1299,21 @@
       "—";
 
 
-    let affixes =
-      datacron.affixes ||
-      [];
+    const affixes =
+      Array.isArray(
+        datacron.affixes
+      )
+        ? datacron.affixes
+        : [];
 
 
-    if (
-      !Array.isArray(affixes)
-    ) {
-      affixes = [];
-    }
-
-
-    let affixHtml = "";
+    let affixesHtml =
+      "";
 
 
     if (affixes.length) {
 
-      affixHtml =
+      affixesHtml =
         `
         <div class="affixes">
 
@@ -1922,13 +1323,15 @@
                 affix =>
                   `
                   <div class="affix">
-                    ${escapeHtml(
-                      typeof affix === "string"
-                        ? affix
-                        : JSON.stringify(
-                            affix
-                          )
-                    )}
+                    ${
+                      escapeHtml(
+                        typeof affix === "string"
+                          ? affix
+                          : JSON.stringify(
+                              affix
+                            )
+                      )
+                    }
                   </div>
                   `
               )
@@ -1947,137 +1350,17 @@
       </div>
 
       <div class="datacron-meta">
-        Set: ${escapeHtml(setId)}
-        · Tier: ${escapeHtml(tier)}
+        Set ${escapeHtml(setId)}
+        · Tier ${escapeHtml(tier)}
       </div>
 
-      ${affixHtml}
+      ${affixesHtml}
       `;
   }
 
 
   // ==========================================================
-  // PORTRAIT TEST
-  // ==========================================================
-
-  async function testPortraits() {
-
-    clearDebug();
-
-    try {
-
-      setStatus(
-        "Проверяю индекс портретов…"
-      );
-
-
-      const response =
-        await fetch(
-          "/portraitStatus"
-        );
-
-
-      const data =
-        await response.json();
-
-
-      debug(
-        "PORTRAIT STATUS",
-        data
-      );
-
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-          `HTTP ${response.status}`
-        );
-      }
-
-
-      setStatus(
-        `Портретов найдено: ${data.portraits}`,
-        "success"
-      );
-
-    } catch (error) {
-
-      debug(
-        "ERROR",
-        error.message
-      );
-
-      setStatus(
-        "Ошибка: " +
-        error.message,
-        "error"
-      );
-    }
-  }
-
-
-  // ==========================================================
-  // GAME DATA TEST
-  // ==========================================================
-
-  async function testGameData() {
-
-    clearDebug();
-
-    try {
-
-      setStatus(
-        "Проверяю game data…"
-      );
-
-
-      const response =
-        await fetch(
-          "/gameDataStatus"
-        );
-
-
-      const data =
-        await response.json();
-
-
-      debug(
-        "GAME DATA STATUS",
-        data
-      );
-
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-          `HTTP ${response.status}`
-        );
-      }
-
-
-      setStatus(
-        "Game data загружена",
-        "success"
-      );
-
-    } catch (error) {
-
-      debug(
-        "ERROR",
-        error.message
-      );
-
-      setStatus(
-        "Ошибка: " +
-        error.message,
-        "error"
-      );
-    }
-  }
-
-
-  // ==========================================================
-  // PRETTY UNIT NAME
+  // NAMES
   // ==========================================================
 
   function prettyUnitName(
@@ -2146,7 +1429,10 @@
 
 
     return base
-      .replace(/_/g, " ")
+      .replace(
+        /_/g,
+        " "
+      )
       .replace(
         /\b\w/g,
         letter =>
@@ -2156,41 +1442,7 @@
 
 
   // ==========================================================
-  // ESCAPE HTML
-  // ==========================================================
-
-  function escapeHtml(
-    value
-  ) {
-
-    return String(
-      value ?? ""
-    )
-      .replace(
-        /&/g,
-        "&amp;"
-      )
-      .replace(
-        /</g,
-        "&lt;"
-      )
-      .replace(
-        />/g,
-        "&gt;"
-      )
-      .replace(
-        /"/g,
-        "&quot;"
-      )
-      .replace(
-        /'/g,
-        "&#039;"
-      );
-  }
-
-
-  // ==========================================================
-  // ENTER KEY
+  // ENTER
   // ==========================================================
 
   allyCodeInput.addEventListener(
@@ -2204,15 +1456,6 @@
       }
 
     }
-  );
-
-
-  // ==========================================================
-  // INITIAL
-  // ==========================================================
-
-  debug(
-    "Arena Tracker initialized"
   );
 
 </script>
