@@ -7,8 +7,7 @@ const COMLINK_URL =
   "https://arena-tracker-2uod.onrender.com";
 
 const ICONS_API =
-  "https://api.github.com/repos/tools4swgoh/swgoh-icons/git/trees/master?recursive=1";
-
+  "https://api.github.com/repos/tools4swgoh/swgoh-icons/git/trees/main?recursive=1";
 const GAMEDATA_URL =
   "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/gameDataItems.json";
 
