@@ -8,17 +8,15 @@ const COMLINK_URL = (process.env.COMLINK_URL || "https://arena-tracker-2uod.onre
 const ASSET_URL = (process.env.ASSET_URL || "https://arena-tracker-assets.onrender.com").replace(/\/+$/, "");
 const UNITS_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/units.json.br";
 const VERSIONS_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/allVersions.json";
-const LOCALE_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/Loc_ENG_US.txt.json.br";
+const PLAYER_TITLES_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/playerTitle.json";
+const CATEGORIES_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/category.json";
+const ENG_LOCALE_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/Loc_ENG_US.txt.json.br";
+const RUS_LOCALE_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/Loc_RUS_RU.txt.json.br";
 
 app.use(cors());
 app.use(express.json());
 
-let unitsCache = null;
-let unitsCacheTime = 0;
-let versionsCache = null;
-let versionsCacheTime = 0;
-let localizationCache = null;
-let localizationCacheTime = 0;
+const cache = new Map();
 
 async function fetchJson(url, options = {}) {
     const response = await fetch(url, options);
@@ -55,48 +53,109 @@ async function fetchBrotliJson(url) {
     }
 }
 
-async function requestComlink(path, payload = {}) {
-    return fetchJson(`${COMLINK_URL}${path}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ payload })
-    });
+function collectionData(parsed) {
+    if (Array.isArray(parsed)) {
+        return parsed;
+    }
+
+    if (Array.isArray(parsed?.data)) {
+        return parsed.data;
+    }
+
+    if (parsed?.data && typeof parsed.data === "object") {
+        return Object.values(parsed.data);
+    }
+
+    if (parsed && typeof parsed === "object") {
+        return Object.values(parsed).filter(value => value && typeof value === "object");
+    }
+
+    return [];
+}
+
+function normalizeIds(value) {
+    if (Array.isArray(value)) {
+        return value.flatMap(normalizeIds);
+    }
+
+    if (typeof value === "string" || typeof value === "number") {
+        return [String(value)];
+    }
+
+    if (value && typeof value === "object") {
+        if (value.id !== undefined) {
+            return normalizeIds(value.id);
+        }
+
+        return Object.values(value).flatMap(normalizeIds);
+    }
+
+    return [];
+}
+
+function indexById(items) {
+    const map = new Map();
+
+    for (const item of items) {
+        if (item?.id !== undefined) {
+            map.set(String(item.id), item);
+        }
+    }
+
+    return map;
+}
+
+async function getCached(key, loader, ttl) {
+    const current = cache.get(key);
+
+    if (current && Date.now() - current.time < ttl) {
+        return current.value;
+    }
+
+    const value = await loader();
+    cache.set(key, { value, time: Date.now() });
+
+    return value;
 }
 
 async function getUnits() {
-    if (unitsCache && Date.now() - unitsCacheTime < 3600000) {
-        return unitsCache;
-    }
+    return getCached("units", async () => {
+        const parsed = await fetchBrotliJson(UNITS_URL);
+        const units = collectionData(parsed);
 
-    const parsed = await fetchBrotliJson(UNITS_URL);
-    const units = Array.isArray(parsed) ? parsed : parsed.data;
+        if (!units.length) {
+            throw new Error("Invalid units data");
+        }
 
-    if (!Array.isArray(units)) {
-        throw new Error("Invalid units data");
-    }
-
-    unitsCache = units;
-    unitsCacheTime = Date.now();
-
-    return units;
+        return units;
+    }, 3600000);
 }
 
 async function getAssetVersion() {
-    if (versionsCache && Date.now() - versionsCacheTime < 300000) {
-        return versionsCache;
-    }
+    return getCached("assetVersion", async () => {
+        const data = await fetchJson(VERSIONS_URL);
+        const version = data?.assetVersion;
 
-    const data = await fetchJson(VERSIONS_URL);
-    const version = data?.assetVersion;
+        if (!version) {
+            throw new Error("assetVersion not found");
+        }
 
-    if (!version) {
-        throw new Error("assetVersion not found");
-    }
+        return version;
+    }, 300000);
+}
 
-    versionsCache = version;
-    versionsCacheTime = Date.now();
+async function getPlayerTitles() {
+    return getCached("playerTitles", async () => {
+        const parsed = await fetchJson(PLAYER_TITLES_URL);
+        return indexById(collectionData(parsed));
+    }, 3600000);
+}
 
-    return version;
+async function getCategories() {
+    return getCached("categories", async () => {
+        const parsed = await fetchJson(CATEGORIES_URL);
+        return indexById(collectionData(parsed));
+    }, 3600000);
 }
 
 function buildLocalizationMap(node, map = {}) {
@@ -106,16 +165,7 @@ function buildLocalizationMap(node, map = {}) {
 
     if (Array.isArray(node)) {
         for (const item of node) {
-            if (item && typeof item === "object") {
-                const key = item.key || item.nameKey || item.id;
-                const value = item.value ?? item.text ?? item.valueText;
-
-                if (typeof key === "string" && typeof value === "string") {
-                    map[key] = value;
-                }
-
-                buildLocalizationMap(item, map);
-            }
+            buildLocalizationMap(item, map);
         }
 
         return map;
@@ -134,48 +184,97 @@ function buildLocalizationMap(node, map = {}) {
     return map;
 }
 
-async function getLocalization() {
-    if (localizationCache && Date.now() - localizationCacheTime < 3600000) {
-        return localizationCache;
-    }
+async function getLocalization(language = "ENG") {
+    const key = language === "RUS" ? "localization_rus" : "localization_eng";
+    const url = language === "RUS" ? RUS_LOCALE_URL : ENG_LOCALE_URL;
 
-    const parsed = await fetchBrotliJson(LOCALE_URL);
-    localizationCache = buildLocalizationMap(parsed.data || parsed);
-    localizationCacheTime = Date.now();
-
-    return localizationCache;
+    return getCached(key, async () => {
+        const parsed = await fetchBrotliJson(url);
+        return buildLocalizationMap(parsed.data || parsed);
+    }, 3600000);
 }
 
-async function localize(key) {
-    if (!key) {
+function resolvePlayerTitle(player, playerTitles, localization) {
+    const id = String(player?.selectedPlayerTitle?.id || "");
+
+    if (!id) {
         return "";
     }
 
-    const localization = await getLocalization();
-    return localization[key] || key;
+    const definition = playerTitles.get(id);
+
+    if (!definition) {
+        return id;
+    }
+
+    const nameKey = definition.nameKey || definition.titleKey || definition.textKey || "";
+
+    return localization[nameKey] || definition.name || definition.title || nameKey || id;
 }
 
-function getUnitAlignment(unit) {
-    const categories = unit?.categoryId || unit?.categoryIdList || [];
+function getUnitCategoryIds(unit) {
+    return [
+        ...normalizeIds(unit?.categoryId),
+        ...normalizeIds(unit?.categoryIdList),
+        ...normalizeIds(unit?.categoryIds),
+        ...normalizeIds(unit?.categories)
+    ];
+}
 
-    if (categories.includes("alignment_light")) {
+function getUnitAlignment(unit, categories) {
+    const ids = getUnitCategoryIds(unit);
+    const resolved = [];
+
+    for (const id of ids) {
+        resolved.push(id.toLowerCase());
+
+        const category = categories.get(id);
+
+        if (category) {
+            for (const value of Object.values(category)) {
+                if (typeof value === "string") {
+                    resolved.push(value.toLowerCase());
+                }
+            }
+        }
+    }
+
+    const text = resolved.join("|");
+
+    if (
+        resolved.includes("alignment_light") ||
+        text.includes("alignment_light") ||
+        text.includes("light_side") ||
+        text.includes("lightside")
+    ) {
         return "light";
     }
 
-    if (categories.includes("alignment_dark")) {
+    if (
+        resolved.includes("alignment_dark") ||
+        text.includes("alignment_dark") ||
+        text.includes("dark_side") ||
+        text.includes("darkside")
+    ) {
         return "dark";
     }
 
-    if (categories.includes("alignment_neutral")) {
+    if (
+        resolved.includes("alignment_neutral") ||
+        text.includes("alignment_neutral") ||
+        text.includes("neutral")
+    ) {
         return "neutral";
     }
 
-    if (unit?.forceAlignment === 1) {
-        return "dark";
+    const force = String(unit?.forceAlignment ?? "").toLowerCase();
+
+    if (force === "light" || force === "light_side" || force === "lightside") {
+        return "light";
     }
 
-    if (unit?.forceAlignment === 2) {
-        return "light";
+    if (force === "dark" || force === "dark_side" || force === "darkside") {
+        return "dark";
     }
 
     return "neutral";
@@ -192,12 +291,22 @@ function getRelicLevel(relic) {
 }
 
 async function enrichArena(arena, player) {
-    const [units, localization] = await Promise.all([
+    const [units, categories, localizationEng, localizationRus, playerTitles] = await Promise.all([
         getUnits(),
-        getLocalization()
+        getCategories(),
+        getLocalization("ENG"),
+        getLocalization("RUS"),
+        getPlayerTitles()
     ]);
 
-    const unitMap = new Map(units.map(unit => [unit.baseId, unit]));
+    const unitMap = new Map();
+
+    for (const unit of units) {
+        if (unit?.baseId) {
+            unitMap.set(unit.baseId, unit);
+        }
+    }
+
     const rosterMap = new Map((player.rosterUnit || []).map(unit => [unit.definitionId, unit]));
 
     const pvpProfile = (arena.pvpProfile || []).map(profile => ({
@@ -210,10 +319,16 @@ async function enrichArena(arena, player) {
                     const baseId = definitionId.split(":")[0];
                     const unit = unitMap.get(baseId) || {};
                     const roster = rosterMap.get(definitionId) || {};
-                    const categories = unit.categoryId || unit.categoryIdList || [];
-                    const isGalacticLegend = Boolean(unit.legend || categories.includes("galactic_legend"));
-                    const name = localization[unit.nameKey] || unit.nameKey || baseId;
-                    const alignment = isGalacticLegend ? "galactic_legend" : getUnitAlignment(unit);
+                    const categoryIds = getUnitCategoryIds(unit);
+                    const isGalacticLegend = Boolean(
+                        unit.legend === true ||
+                        unit.legend === 1 ||
+                        String(unit.legend).toLowerCase() === "true" ||
+                        categoryIds.some(id => id.toLowerCase() === "galactic_legend")
+                    );
+                    const nameKey = unit.nameKey || "";
+                    const name = localizationEng[nameKey] || nameKey || baseId;
+                    const alignment = isGalacticLegend ? "galactic_legend" : getUnitAlignment(unit, categories);
 
                     return {
                         ...cell,
@@ -230,18 +345,37 @@ async function enrichArena(arena, player) {
             : profile.squad
     }));
 
-    const titleKey = player.selectedPlayerTitle?.nameKey || "";
-    const title = localization[titleKey] || titleKey || "";
-
     return {
         ...arena,
         name: player.name || arena.name,
         allyCode: player.allyCode || arena.allyCode,
         guildName: player.guildName || arena.guildName,
         selectedPlayerTitle: player.selectedPlayerTitle || null,
-        title,
+        title: resolvePlayerTitle(player, playerTitles, localizationRus),
         pvpProfile
     };
+}
+
+async function requestComlink(path, payload = {}) {
+    return fetchJson(`${COMLINK_URL}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payload, enums: false })
+    });
+}
+
+async function requestArena(allyCode) {
+    const [arena, player] = await Promise.all([
+        requestComlink("/playerArena", {
+            allyCode: String(allyCode),
+            playerDetailsOnly: false
+        }),
+        requestComlink("/player", {
+            allyCode: String(allyCode)
+        })
+    ]);
+
+    return enrichArena(arena, player);
 }
 
 async function getUnit(definitionId) {
@@ -291,17 +425,7 @@ app.get("/arena", async (req, res) => {
             return res.status(400).json({ error: "allyCode is required" });
         }
 
-        const [arena, player] = await Promise.all([
-            requestComlink("/playerArena", {
-                allyCode: String(allyCode),
-                playerDetailsOnly: false
-            }),
-            requestComlink("/player", {
-                allyCode: String(allyCode)
-            })
-        ]);
-
-        res.json(await enrichArena(arena, player));
+        res.json(await requestArena(allyCode));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -315,17 +439,7 @@ app.post("/arena", async (req, res) => {
             return res.status(400).json({ error: "allyCode is required" });
         }
 
-        const [arena, player] = await Promise.all([
-            requestComlink("/playerArena", {
-                allyCode: String(allyCode),
-                playerDetailsOnly: false
-            }),
-            requestComlink("/player", {
-                allyCode: String(allyCode)
-            })
-        ]);
-
-        res.json(await enrichArena(arena, player));
+        res.json(await requestArena(allyCode));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -339,16 +453,17 @@ app.get("/profile", async (req, res) => {
             return res.status(400).json({ error: "allyCode is required" });
         }
 
-        const player = await requestComlink("/player", {
-            allyCode: String(allyCode)
-        });
-
-        const localization = await getLocalization();
-        const titleKey = player.selectedPlayerTitle?.nameKey || "";
+        const [player, playerTitles, localizationRus] = await Promise.all([
+            requestComlink("/player", {
+                allyCode: String(allyCode)
+            }),
+            getPlayerTitles(),
+            getLocalization("RUS")
+        ]);
 
         res.json({
             ...player,
-            title: localization[titleKey] || titleKey || ""
+            title: resolvePlayerTitle(player, playerTitles, localizationRus)
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -363,16 +478,17 @@ app.post("/profile", async (req, res) => {
             return res.status(400).json({ error: "allyCode is required" });
         }
 
-        const player = await requestComlink("/player", {
-            allyCode: String(allyCode)
-        });
-
-        const localization = await getLocalization();
-        const titleKey = player.selectedPlayerTitle?.nameKey || "";
+        const [player, playerTitles, localizationRus] = await Promise.all([
+            requestComlink("/player", {
+                allyCode: String(allyCode)
+            }),
+            getPlayerTitles(),
+            getLocalization("RUS")
+        ]);
 
         res.json({
             ...player,
-            title: localization[titleKey] || titleKey || ""
+            title: resolvePlayerTitle(player, playerTitles, localizationRus)
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -387,8 +503,7 @@ app.get("/unit", async (req, res) => {
             return res.status(400).json({ error: "definitionId is required" });
         }
 
-        const unit = await getUnit(definitionId);
-        res.json(unit);
+        res.json(await getUnit(definitionId));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -414,7 +529,6 @@ app.get("/characterImage", async (req, res) => {
 
         const version = await getAssetVersion();
         const assetOS = detectAssetOS(req);
-
         const assetName = String(unit.thumbnailName)
             .replace(/^tex\./, "")
             .replace(/\.[^/.]+$/, "");
