@@ -1,14 +1,3 @@
-FROM node:22-alpine
+FROM ghcr.io/swgoh-utils/swgoh-comlink:latest
 
-WORKDIR /app
-
-COPY proxy/package.json ./package.json
-RUN npm install --omit=dev
-
-COPY proxy/server.js ./server.js
-
-ENV NODE_ENV=production
-
-EXPOSE 3000
-
-CMD ["node", "server.js"]
+ENV TINI_SUBREAPER=true
