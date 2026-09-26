@@ -21,19 +21,20 @@
       margin: 0;
       padding: 0;
       min-height: 100%;
-      background: #0b0d12;
-      color: #f4f4f5;
+      background: #0d1015;
+      color: #f2f4f7;
       font-family:
         -apple-system,
         BlinkMacSystemFont,
         "Segoe UI",
         Roboto,
+        Helvetica,
         Arial,
         sans-serif;
     }
 
     body {
-      padding: 18px;
+      padding: 20px;
     }
 
     button,
@@ -42,25 +43,25 @@
     }
 
     button {
-      -webkit-user-select: none;
-      user-select: none;
+      cursor: pointer;
     }
 
-    .app {
+    .container {
       width: 100%;
-      max-width: 900px;
+      max-width: 1100px;
       margin: 0 auto;
     }
 
-    /* =========================
-       HEADER
-    ========================= */
+    /* -------------------------------------------------- */
+    /* HEADER */
+    /* -------------------------------------------------- */
 
     .header {
-      margin-bottom: 18px;
+      margin-bottom: 20px;
     }
 
     .title {
+      margin: 0;
       font-size: 28px;
       font-weight: 800;
       letter-spacing: -0.5px;
@@ -68,126 +69,138 @@
 
     .subtitle {
       margin-top: 5px;
-      color: #858b98;
+      color: #8f98a8;
       font-size: 14px;
     }
 
-    /* =========================
-       SEARCH
-    ========================= */
+    /* -------------------------------------------------- */
+    /* INPUT */
+    /* -------------------------------------------------- */
 
     .search-card {
-      background: #14171e;
-      border: 1px solid #252a34;
+      background: #151a22;
+      border: 1px solid #242b36;
       border-radius: 16px;
-      padding: 14px;
+      padding: 16px;
       margin-bottom: 16px;
     }
 
     .input-row {
       display: flex;
-      gap: 9px;
+      gap: 10px;
     }
 
-    input {
-      min-width: 0;
+    .ally-input {
       flex: 1;
+      min-width: 0;
+      height: 48px;
+      padding: 0 14px;
 
-      background: #0e1015;
-      color: white;
+      border: 1px solid #303846;
+      border-radius: 12px;
 
-      border: 1px solid #2b303a;
-      border-radius: 11px;
+      background: #0d1117;
+      color: #ffffff;
 
-      padding: 12px 13px;
       outline: none;
-
-      -webkit-user-select: text;
-      user-select: text;
     }
 
-    input:focus {
-      border-color: #4c5565;
+    .ally-input:focus {
+      border-color: #596579;
     }
 
-    button {
+    .button {
+      height: 48px;
+      padding: 0 18px;
+
       border: 0;
-      border-radius: 11px;
-      padding: 0 16px;
+      border-radius: 12px;
 
-      background: #e8e9eb;
-      color: #111318;
+      background: #e7ebf0;
+      color: #11151b;
 
       font-weight: 700;
-      cursor: pointer;
-
-      min-height: 43px;
+      white-space: nowrap;
     }
 
-    button:active {
+    .button:active {
       transform: scale(0.98);
     }
 
-    .buttons {
+    .button.secondary {
+      background: #242b36;
+      color: #e6eaf0;
+    }
+
+    .button.small {
+      height: 40px;
+      padding: 0 13px;
+      font-size: 13px;
+    }
+
+    .button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .actions {
       display: flex;
-      gap: 9px;
+      gap: 8px;
       margin-top: 10px;
+      flex-wrap: wrap;
     }
 
-    .buttons button {
-      flex: 1;
-    }
-
-    .secondary {
-      background: #252a34;
-      color: #f3f4f6;
-    }
-
-    /* =========================
-       STATUS
-    ========================= */
+    /* -------------------------------------------------- */
+    /* STATUS */
+    /* -------------------------------------------------- */
 
     .status {
       display: none;
-
-      padding: 11px 13px;
       margin-bottom: 16px;
 
-      background: #14171e;
-      border: 1px solid #252a34;
+      padding: 12px 14px;
       border-radius: 12px;
 
-      color: #aeb4c0;
-      font-size: 14px;
+      background: #151a22;
+      border: 1px solid #242b36;
 
-      word-break: break-word;
+      color: #aeb6c4;
+      font-size: 14px;
+      line-height: 1.45;
     }
 
-    .status.show {
+    .status.visible {
       display: block;
     }
 
     .status.error {
-      color: #ff7777;
-      border-color: #512b2b;
+      border-color: #713b42;
+      color: #ffb4bc;
+      background: #211316;
     }
 
-    /* =========================
-       PLAYER CARD
-    ========================= */
+    .status.success {
+      border-color: #385f47;
+      color: #b7e5c4;
+      background: #111b15;
+    }
+
+    /* -------------------------------------------------- */
+    /* PLAYER CARD */
+    /* -------------------------------------------------- */
 
     .player-card {
       display: none;
 
-      background: #14171e;
-      border: 1px solid #252a34;
+      background: #151a22;
+      border: 1px solid #242b36;
       border-radius: 16px;
 
-      padding: 16px;
+      padding: 18px;
       margin-bottom: 16px;
     }
 
-    .player-card.show {
+    .player-card.visible {
       display: block;
     }
 
@@ -195,154 +208,195 @@
       display: flex;
       justify-content: space-between;
       gap: 15px;
+      align-items: flex-start;
     }
 
     .player-name {
-      font-size: 21px;
+      font-size: 23px;
       font-weight: 800;
+      margin: 0;
     }
 
     .player-meta {
       margin-top: 5px;
-      color: #858b98;
+      color: #8f98a8;
       font-size: 13px;
+      line-height: 1.5;
     }
 
-    .rank-box {
-      text-align: right;
-      white-space: nowrap;
+    .ratings {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
     }
 
-    .rank-label {
-      color: #858b98;
+    .rating {
+      min-width: 150px;
+      padding: 12px;
+
+      border-radius: 12px;
+      background: #0e131a;
+      border: 1px solid #242b36;
+    }
+
+    .rating-label {
+      color: #818b9b;
       font-size: 12px;
+      margin-bottom: 4px;
     }
 
-    .rank {
-      margin-top: 2px;
-      font-size: 27px;
+    .rating-value {
+      font-size: 22px;
       font-weight: 800;
     }
 
-    /* =========================
-       SECTIONS
-    ========================= */
+    /* -------------------------------------------------- */
+    /* SECTION */
+    /* -------------------------------------------------- */
+
+    .section {
+      display: none;
+
+      background: #151a22;
+      border: 1px solid #242b36;
+      border-radius: 16px;
+
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .section.visible {
+      display: block;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+
+      margin-bottom: 14px;
+    }
 
     .section-title {
-      margin: 20px 0 10px;
-      font-size: 17px;
+      margin: 0;
+      font-size: 18px;
       font-weight: 800;
     }
 
-    /* =========================
-       ARENA
-    ========================= */
+    .section-subtitle {
+      color: #818b9b;
+      font-size: 12px;
+      margin-top: 3px;
+    }
 
-    .arena-card {
-      background: #14171e;
-      border: 1px solid #252a34;
-      border-radius: 16px;
-      overflow: hidden;
+    /* -------------------------------------------------- */
+    /* ARENA TABLE */
+    /* -------------------------------------------------- */
+
+    .arena-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
     }
 
     .arena-row {
       display: grid;
-      grid-template-columns: 55px 1fr;
-      gap: 12px;
+      grid-template-columns: 54px minmax(0, 1fr) auto;
 
       align-items: center;
+      gap: 10px;
 
-      min-height: 84px;
-      padding: 10px 13px;
+      min-height: 58px;
+      padding: 7px 10px;
 
-      border-bottom: 1px solid #252a34;
-    }
-
-    .arena-row:last-child {
-      border-bottom: 0;
+      background: #0e131a;
+      border: 1px solid #242b36;
+      border-radius: 12px;
     }
 
     .arena-row.me {
-      background: #191d26;
+      background: #1b2029;
+      border-color: #697384;
     }
 
-    .position {
+    .arena-rank {
+      text-align: center;
       font-size: 18px;
       font-weight: 800;
-      color: #aeb4c0;
-      text-align: center;
+      color: #b8c0cc;
     }
 
-    .arena-row.me .position {
-      color: white;
-    }
-
-    .opponent {
+    .arena-player {
       min-width: 0;
     }
 
-    .opponent-name {
-      font-size: 15px;
-      font-weight: 700;
-
+    .arena-name {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+
+      font-size: 15px;
+      font-weight: 700;
     }
 
-    .opponent-code {
-      margin-top: 3px;
-      color: #727887;
+    .arena-ally {
+      margin-top: 2px;
+      color: #727c8d;
+      font-size: 11px;
+    }
+
+    .arena-score {
+      text-align: right;
+      color: #9ca6b5;
       font-size: 12px;
     }
 
-    /* =========================
-       SQUAD
-    ========================= */
-
-    .squad-card {
-      background: #14171e;
-      border: 1px solid #252a34;
-      border-radius: 16px;
-      padding: 14px;
-    }
+    /* -------------------------------------------------- */
+    /* SQUAD */
+    /* -------------------------------------------------- */
 
     .squad {
       display: grid;
       grid-template-columns:
         repeat(5, minmax(0, 1fr));
 
-      gap: 8px;
+      gap: 10px;
     }
 
-    .unit {
+    .unit-card {
       min-width: 0;
-      text-align: center;
-    }
-
-    .portrait-wrap {
-      width: 100%;
-      aspect-ratio: 1;
-
-      background: #0b0d12;
-      border: 1px solid #303641;
-      border-radius: 12px;
-
       overflow: hidden;
 
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: #0e131a;
+      border: 1px solid #242b36;
+      border-radius: 13px;
+
+      padding: 8px;
     }
 
-    .portrait {
+    .unit-image-wrap {
+      position: relative;
+
+      width: 100%;
+      aspect-ratio: 1 / 1;
+
+      overflow: hidden;
+      border-radius: 10px;
+
+      background: #080b10;
+    }
+
+    .unit-image {
       width: 100%;
       height: 100%;
-      object-fit: cover;
       display: block;
+
+      object-fit: cover;
     }
 
-    .portrait-placeholder {
+    .unit-placeholder {
       width: 100%;
       height: 100%;
 
@@ -350,88 +404,143 @@
       align-items: center;
       justify-content: center;
 
-      color: #4c5260;
-      font-size: 24px;
+      color: #596271;
+      font-size: 22px;
     }
 
     .unit-name {
-      margin-top: 5px;
-
-      font-size: 10px;
-      line-height: 1.15;
-
-      color: #aeb4c0;
+      margin-top: 7px;
 
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+
+      font-size: 11px;
+      font-weight: 700;
+      color: #c4cbd5;
     }
 
-    /* =========================
-       DATACRON
-    ========================= */
+    .unit-id {
+      margin-top: 2px;
+
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      color: #626c7c;
+      font-size: 9px;
+    }
+
+    /* -------------------------------------------------- */
+    /* DATACRON */
+    /* -------------------------------------------------- */
 
     .datacron {
-      margin-top: 14px;
+      padding: 14px;
 
-      padding: 12px;
-
-      background: #0e1015;
-      border: 1px solid #252a34;
-      border-radius: 11px;
+      background: #0e131a;
+      border: 1px solid #242b36;
+      border-radius: 12px;
     }
 
-    .datacron-title {
+    .datacron-id {
+      font-size: 14px;
+      font-weight: 700;
+      word-break: break-all;
+    }
+
+    .datacron-meta {
+      margin-top: 5px;
+      color: #818b9b;
+      font-size: 12px;
+    }
+
+    .affixes {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-top: 12px;
+    }
+
+    .affix {
+      padding: 9px 10px;
+      border-radius: 9px;
+      background: #151b24;
+      color: #abb3c0;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    /* -------------------------------------------------- */
+    /* DEBUG */
+    /* -------------------------------------------------- */
+
+    .debug {
+      display: none;
+
+      background: #090c11;
+      border: 1px solid #242b36;
+      border-radius: 16px;
+
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .debug.visible {
+      display: block;
+    }
+
+    .debug-title {
       font-size: 13px;
       font-weight: 800;
+      margin-bottom: 8px;
     }
 
-    .datacron-text {
-      margin-top: 4px;
-      color: #858b98;
-      font-size: 12px;
-      line-height: 1.45;
-    }
+    .debug-console {
+      margin: 0;
 
-    /* =========================
-       DEBUG
-    ========================= */
-
-    details {
-      margin-top: 18px;
-    }
-
-    summary {
-      cursor: pointer;
-      color: #777e8d;
-      font-size: 13px;
-    }
-
-    pre {
-      margin-top: 10px;
-
-      max-height: 400px;
+      max-height: 330px;
       overflow: auto;
-
-      background: #07080b;
-      border: 1px solid #20242c;
-      border-radius: 10px;
 
       padding: 12px;
 
-      color: #aeb4c0;
+      border-radius: 10px;
+      background: #05070a;
+
+      color: #8f9aaa;
+      font-family:
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        Monaco,
+        Consolas,
+        monospace;
+
       font-size: 11px;
+      line-height: 1.5;
 
       white-space: pre-wrap;
       word-break: break-word;
     }
 
-    /* =========================
-       MOBILE
-    ========================= */
+    /* -------------------------------------------------- */
+    /* EMPTY */
+    /* -------------------------------------------------- */
 
-    @media (max-width: 520px) {
+    .empty {
+      padding: 30px 15px;
 
+      text-align: center;
+
+      color: #687384;
+      font-size: 13px;
+    }
+
+    /* -------------------------------------------------- */
+    /* MOBILE */
+    /* -------------------------------------------------- */
+
+    @media (max-width: 650px) {
       body {
         padding: 12px;
       }
@@ -444,47 +553,60 @@
         flex-direction: column;
       }
 
+      .input-row .button {
+        width: 100%;
+      }
+
       .player-top {
-        align-items: flex-start;
+        flex-direction: column;
       }
 
-      .rank {
-        font-size: 24px;
-      }
-
-      .arena-row {
-        grid-template-columns: 45px 1fr;
+      .rating {
+        min-width: 0;
+        flex: 1;
       }
 
       .squad {
-        gap: 5px;
+        gap: 6px;
+      }
+
+      .unit-card {
+        padding: 5px;
+        border-radius: 10px;
       }
 
       .unit-name {
         font-size: 9px;
       }
 
+      .unit-id {
+        font-size: 8px;
+      }
+
+      .arena-row {
+        grid-template-columns: 42px minmax(0, 1fr) auto;
+        padding: 6px 7px;
+      }
+
+      .arena-name {
+        font-size: 13px;
+      }
     }
   </style>
 </head>
 
-
 <body>
 
-<div class="app">
+<div class="container">
 
   <!-- HEADER -->
 
   <div class="header">
-
-    <div class="title">
-      SWGOH Arena Tracker
-    </div>
+    <h1 class="title">SWGOH Arena Tracker</h1>
 
     <div class="subtitle">
-      Squad Arena · Live data
+      Squad Arena · Fleet Arena · Squad · Datacron
     </div>
-
   </div>
 
 
@@ -496,14 +618,16 @@
 
       <input
         id="allyCode"
+        class="ally-input"
         type="text"
         inputmode="numeric"
-        placeholder="Ally Code"
         autocomplete="off"
+        placeholder="Введите Ally Code"
       >
 
       <button
         id="arenaButton"
+        class="button"
         onclick="loadArena()"
       >
         Получить Arena
@@ -511,21 +635,34 @@
 
     </div>
 
-
-    <div class="buttons">
+    <div class="actions">
 
       <button
-        class="secondary"
+        class="button secondary small"
         onclick="loadPlayer()"
       >
         Получить профиль
       </button>
 
       <button
-        class="secondary"
+        class="button secondary small"
         onclick="testPortraits()"
       >
         Test portraits
+      </button>
+
+      <button
+        class="button secondary small"
+        onclick="testGameData()"
+      >
+        Test game data
+      </button>
+
+      <button
+        class="button secondary small"
+        onclick="toggleDebug()"
+      >
+        Debug
       </button>
 
     </div>
@@ -552,12 +689,12 @@
 
       <div>
 
-        <div
+        <h2
           id="playerName"
           class="player-name"
         >
           —
-        </div>
+        </h2>
 
         <div
           id="playerMeta"
@@ -568,16 +705,52 @@
 
       </div>
 
+    </div>
 
-      <div class="rank-box">
 
-        <div class="rank-label">
+    <div class="ratings">
+
+      <div class="rating">
+
+        <div class="rating-label">
           Squad Arena
         </div>
 
         <div
-          id="playerRank"
-          class="rank"
+          id="squadRank"
+          class="rating-value"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <div class="rating">
+
+        <div class="rating-label">
+          Fleet Arena
+        </div>
+
+        <div
+          id="fleetRank"
+          class="rating-value"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <div class="rating">
+
+        <div class="rating-label">
+          Skill Rating
+        </div>
+
+        <div
+          id="skillRating"
+          class="rating-value"
         >
           —
         </div>
@@ -593,16 +766,29 @@
 
   <div
     id="arenaSection"
-    style="display:none"
+    class="section"
   >
 
-    <div class="section-title">
-      Arena
+    <div class="section-header">
+
+      <div>
+
+        <h2 class="section-title">
+          Squad Arena
+        </h2>
+
+        <div class="section-subtitle">
+          Текущий топ игроков
+        </div>
+
+      </div>
+
     </div>
 
+
     <div
-      id="arena"
-      class="arena-card"
+      id="arenaList"
+      class="arena-list"
     ></div>
 
   </div>
@@ -612,224 +798,208 @@
 
   <div
     id="squadSection"
-    style="display:none"
+    class="section"
   >
 
-    <div class="section-title">
-      Squad
-    </div>
+    <div class="section-header">
 
-    <div class="squad-card">
+      <div>
 
-      <div
-        id="squad"
-        class="squad"
-      ></div>
+        <h2 class="section-title">
+          Squad
+        </h2>
 
-
-      <div
-        id="datacron"
-        class="datacron"
-        style="display:none"
-      >
-
-        <div class="datacron-title">
-          Datacron
+        <div class="section-subtitle">
+          Защищающаяся команда
         </div>
-
-        <div
-          id="datacronText"
-          class="datacron-text"
-        ></div>
 
       </div>
 
     </div>
+
+
+    <div
+      id="squad"
+      class="squad"
+    ></div>
+
+  </div>
+
+
+  <!-- DATACRON -->
+
+  <div
+    id="datacronSection"
+    class="section"
+  >
+
+    <div class="section-header">
+
+      <div>
+
+        <h2 class="section-title">
+          Datacron
+        </h2>
+
+        <div class="section-subtitle">
+          Активный Datacron
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div
+      id="datacron"
+      class="datacron"
+    ></div>
 
   </div>
 
 
   <!-- DEBUG -->
 
-  <details>
+  <div
+    id="debug"
+    class="debug"
+  >
 
-    <summary>
+    <div class="debug-title">
       Debug Console
-    </summary>
+    </div>
 
-    <pre id="debug"></pre>
+    <pre
+      id="debugConsole"
+      class="debug-console"
+    ></pre>
 
-  </details>
+  </div>
 
 </div>
 
 
 <script>
 
-  /* =====================================================
-     CONFIG
-  ===================================================== */
+  // ==========================================================
+  // CONFIG
+  // ==========================================================
 
-  const PROXY =
-    "https://arena-tracker-proxy.onrender.com";
+  const API_BASE = "";
 
 
-  /* =====================================================
-     ELEMENTS
-  ===================================================== */
+  // ==========================================================
+  // ELEMENTS
+  // ==========================================================
 
   const allyCodeInput =
-    document.getElementById(
-      "allyCode"
+    document.getElementById("allyCode");
+
+  const statusElement =
+    document.getElementById("status");
+
+  const debugElement =
+    document.getElementById("debug");
+
+  const debugConsole =
+    document.getElementById("debugConsole");
+
+
+  // ==========================================================
+  // DEBUG
+  // ==========================================================
+
+  function debug(...args) {
+
+    const line =
+      args
+        .map(value => {
+
+          if (
+            typeof value === "string"
+          ) {
+            return value;
+          }
+
+          try {
+            return JSON.stringify(
+              value,
+              null,
+              2
+            );
+          } catch {
+            return String(value);
+          }
+
+        })
+        .join(" ");
+
+    console.log(...args);
+
+    debugConsole.textContent +=
+      line + "\n";
+
+    debugConsole.scrollTop =
+      debugConsole.scrollHeight;
+  }
+
+
+  function clearDebug() {
+    debugConsole.textContent = "";
+  }
+
+
+  function toggleDebug() {
+    debugElement.classList.toggle(
+      "visible"
     );
-
-  const statusEl =
-    document.getElementById(
-      "status"
-    );
-
-  const debugEl =
-    document.getElementById(
-      "debug"
-    );
-
-  const playerCard =
-    document.getElementById(
-      "playerCard"
-    );
-
-  const playerName =
-    document.getElementById(
-      "playerName"
-    );
-
-  const playerMeta =
-    document.getElementById(
-      "playerMeta"
-    );
-
-  const playerRank =
-    document.getElementById(
-      "playerRank"
-    );
-
-  const arenaSection =
-    document.getElementById(
-      "arenaSection"
-    );
-
-  const arenaEl =
-    document.getElementById(
-      "arena"
-    );
-
-  const squadSection =
-    document.getElementById(
-      "squadSection"
-    );
-
-  const squadEl =
-    document.getElementById(
-      "squad"
-    );
-
-  const datacronEl =
-    document.getElementById(
-      "datacron"
-    );
-
-  const datacronText =
-    document.getElementById(
-      "datacronText"
-    );
+  }
 
 
-  /* =====================================================
-     STATUS
-  ===================================================== */
+  // ==========================================================
+  // STATUS
+  // ==========================================================
 
   function setStatus(
-    text,
-    error = false
+    message,
+    type = ""
   ) {
 
-    statusEl.textContent = text;
+    statusElement.textContent =
+      message;
 
-    statusEl.classList.add(
-      "show"
-    );
-
-    statusEl.classList.toggle(
-      "error",
-      error
-    );
-
+    statusElement.className =
+      "status visible " + type;
   }
 
 
   function clearStatus() {
 
-    statusEl.textContent = "";
+    statusElement.textContent = "";
 
-    statusEl.classList.remove(
-      "show",
-      "error"
-    );
-
+    statusElement.className =
+      "status";
   }
 
 
-  /* =====================================================
-     DEBUG
-  ===================================================== */
-
-  function debug(data) {
-
-    try {
-
-      debugEl.textContent =
-        typeof data === "string"
-          ? data
-          : JSON.stringify(
-              data,
-              null,
-              2
-            );
-
-    } catch {
-
-      debugEl.textContent =
-        String(data);
-
-    }
-
-  }
-
-
-  /* =====================================================
-     ALLY CODE
-  ===================================================== */
-
-  function getAllyCode() {
-
-    return allyCodeInput.value
-      .replace(/\D/g, "");
-
-  }
-
-
-  /* =====================================================
-     POST
-  ===================================================== */
+  // ==========================================================
+  // POST
+  // ==========================================================
 
   async function post(
-    endpoint,
+    path,
     body
   ) {
 
+    debug(
+      "POST",
+      path,
+      body
+    );
+
     const response =
       await fetch(
-        `${PROXY}${endpoint}`,
+        API_BASE + path,
         {
           method: "POST",
 
@@ -843,158 +1013,195 @@
         }
       );
 
-
     const text =
       await response.text();
-
 
     let data;
 
     try {
-
       data =
         JSON.parse(text);
-
     } catch {
-
       data = text;
-
     }
 
+    debug(
+      "RESPONSE",
+      response.status,
+      data
+    );
 
     if (!response.ok) {
 
-      throw new Error(
-        typeof data === "object"
-          ? JSON.stringify(data)
-          : data
-      );
+      let message;
 
+      if (
+        data &&
+        typeof data === "object"
+      ) {
+        message =
+          data.error ||
+          JSON.stringify(data);
+      } else {
+        message =
+          String(data);
+      }
+
+      throw new Error(
+        `${response.status}: ${message}`
+      );
     }
 
-
     return data;
-
   }
 
 
-  /* =====================================================
-     ARENA
-  ===================================================== */
+  // ==========================================================
+  // ALLY CODE
+  // ==========================================================
+
+  function getAllyCode() {
+
+    const value =
+      allyCodeInput.value
+        .trim()
+        .replace(/\s+/g, "");
+
+    if (!value) {
+
+      throw new Error(
+        "Введите Ally Code"
+      );
+    }
+
+    if (!/^\d+$/.test(value)) {
+
+      throw new Error(
+        "Ally Code должен содержать только цифры"
+      );
+    }
+
+    return value;
+  }
+
+
+  // ==========================================================
+  // LOAD ARENA
+  // ==========================================================
 
   async function loadArena() {
 
-    const allyCode =
-      getAllyCode();
-
-
-    if (!allyCode) {
-
-      setStatus(
-        "Введите Ally Code",
-        true
-      );
-
-      return;
-
-    }
-
-
-    setStatus(
-      "Получаю Arena..."
-    );
-
+    clearDebug();
 
     try {
 
-      /*
-       * ВАЖНО:
-       * Comlink ожидает именно allycode,
-       * а не allyCode.
-       */
+      const allyCode =
+        getAllyCode();
+
+      setStatus(
+        "Получаю данные Arena…"
+      );
+
+      document
+        .getElementById("arenaButton")
+        .disabled = true;
+
+
+      // ВАЖНО:
+      // Здесь отправляем allyCode.
+      // Proxy сам превращает его в:
+      //
+      // {
+      //   payload: {
+      //     allyCode: "...",
+      //     playerDetailsOnly: false
+      //   }
+      // }
 
       const data =
         await post(
           "/playerArena",
           {
-            allycode:
-              Number(allyCode)
+            allyCode
           }
         );
 
 
-      debug(data);
+      debug(
+        "ARENA DATA",
+        data
+      );
 
 
       renderArena(data);
 
+      renderPlayerFromArena(data);
+
+      renderSquadFromArena(data);
+
+      renderDatacronFromArena(data);
+
 
       setStatus(
-        "Arena загружена"
+        "Arena успешно загружена",
+        "success"
       );
-
 
     } catch (error) {
 
-      console.error(
-        error
-      );
+      console.error(error);
 
+      debug(
+        "ERROR",
+        error.message
+      );
 
       setStatus(
-        `Ошибка: ${error.message}`,
-        true
+        "Ошибка: " +
+        error.message,
+        "error"
       );
 
-    }
+    } finally {
 
+      document
+        .getElementById("arenaButton")
+        .disabled = false;
+    }
   }
 
 
-  /* =====================================================
-     PLAYER
-  ===================================================== */
+  // ==========================================================
+  // LOAD PLAYER
+  // ==========================================================
 
   async function loadPlayer() {
 
-    const allyCode =
-      getAllyCode();
-
-
-    if (!allyCode) {
-
-      setStatus(
-        "Введите Ally Code",
-        true
-      );
-
-      return;
-
-    }
-
-
-    setStatus(
-      "Получаю профиль..."
-    );
-
+    clearDebug();
 
     try {
 
-      /*
-       * Здесь тоже allycode.
-       */
+      const allyCode =
+        getAllyCode();
+
+      setStatus(
+        "Получаю профиль…"
+      );
+
 
       const data =
         await post(
           "/player",
           {
-            allycode:
-              Number(allyCode)
+            allyCode
           }
         );
 
 
-      debug(data);
+      debug(
+        "PLAYER DATA",
+        data
+      );
 
 
       renderPlayer(
@@ -1003,688 +1210,770 @@
 
 
       setStatus(
-        "Профиль загружен"
+        "Профиль успешно загружен",
+        "success"
       );
-
 
     } catch (error) {
 
-      console.error(
-        error
-      );
+      console.error(error);
 
+      debug(
+        "ERROR",
+        error.message
+      );
 
       setStatus(
-        `Ошибка: ${error.message}`,
-        true
+        "Ошибка: " +
+        error.message,
+        "error"
       );
-
     }
-
   }
 
 
-  /* =====================================================
-     PLAYER RENDER
-  ===================================================== */
+  // ==========================================================
+  // PLAYER FROM ARENA
+  // ==========================================================
 
-  function renderPlayer(
+  function renderPlayerFromArena(
     data
   ) {
 
     const player =
       data?.player ||
+      data?.playerData ||
       data;
 
 
-    const name =
-      player?.name ||
-      player?.playerName ||
-      "Unknown Player";
-
-
-    const level =
-      player?.level ??
-      player?.playerLevel;
-
-
-    playerName.textContent =
-      name;
-
-
-    playerMeta.textContent =
-      level
-        ? `Level ${level}`
-        : "SWGOH Player";
-
-
-    playerCard.classList.add(
-      "show"
+    renderPlayer(
+      player,
+      data
     );
-
   }
 
 
-  /* =====================================================
-     ARENA RENDER
-  ===================================================== */
+  // ==========================================================
+  // PLAYER RENDER
+  // ==========================================================
+
+  function renderPlayer(
+    data,
+    arenaData = null
+  ) {
+
+    if (!data) {
+      return;
+    }
+
+
+    const playerCard =
+      document.getElementById(
+        "playerCard"
+      );
+
+    playerCard.classList.add(
+      "visible"
+    );
+
+
+    const name =
+      data.name ||
+      data.playerName ||
+      data.displayName ||
+      "Unknown player";
+
+
+    const level =
+      data.level ??
+      data.playerLevel ??
+      "—";
+
+
+    const allyCode =
+      data.allyCode ??
+      data.allycode ??
+      "—";
+
+
+    document.getElementById(
+      "playerName"
+    ).textContent =
+      name;
+
+
+    document.getElementById(
+      "playerMeta"
+    ).textContent =
+      `Level ${level} · Ally Code ${allyCode}`;
+
+
+    let squadRank =
+      "—";
+
+    let fleetRank =
+      "—";
+
+
+    const profiles =
+      arenaData?.pvpProfile ||
+      data?.pvpProfile ||
+      [];
+
+
+    if (Array.isArray(profiles)) {
+
+      if (profiles[0]) {
+        squadRank =
+          profiles[0].rank ??
+          "—";
+      }
+
+      if (profiles[1]) {
+        fleetRank =
+          profiles[1].rank ??
+          "—";
+      }
+    }
+
+
+    document.getElementById(
+      "squadRank"
+    ).textContent =
+      squadRank;
+
+
+    document.getElementById(
+      "fleetRank"
+    ).textContent =
+      fleetRank;
+
+
+    const skillRating =
+      data?.playerRating
+        ?.playerSkillRating
+        ?.skillRating ??
+      arenaData?.playerRating
+        ?.playerSkillRating
+        ?.skillRating ??
+      "—";
+
+
+    document.getElementById(
+      "skillRating"
+    ).textContent =
+      skillRating;
+  }
+
+
+  // ==========================================================
+  // FIND ARENA CELLS
+  // ==========================================================
+
+  function findArenaCells(
+    data
+  ) {
+
+    const cells =
+      data?.pvpProfile?.[0]
+        ?.squad?.cell;
+
+    if (
+      Array.isArray(cells)
+    ) {
+      return [...cells]
+        .sort(
+          (a, b) =>
+            Number(
+              a.cellIndex ?? 0
+            ) -
+            Number(
+              b.cellIndex ?? 0
+            )
+        );
+    }
+
+    return [];
+  }
+
+
+  // ==========================================================
+  // ARENA RENDER
+  // ==========================================================
 
   function renderArena(
     data
   ) {
 
-    const profiles =
-      data?.pvpProfile ||
-      [];
+    const section =
+      document.getElementById(
+        "arenaSection"
+      );
 
-
-    const squadArena =
-      profiles[0];
-
-
-    const rank =
-      squadArena?.rank;
-
-
-    const player =
-      data?.player ||
-      data;
-
-
-    const name =
-      player?.name ||
-      data?.name ||
-      "Unknown Player";
-
-
-    playerName.textContent =
-      name;
-
-
-    playerRank.textContent =
-      rank ??
-      "—";
-
-
-    playerMeta.textContent =
-      player?.level
-        ? `Level ${player.level}`
-        : "Squad Arena";
-
-
-    playerCard.classList.add(
-      "show"
-    );
-
-
-    /*
-     * Arena cells.
-     */
-
-    const cells =
-      squadArena?.squad?.cell ||
-      [];
-
-
-    const sorted =
-      [...cells].sort(
-        (a, b) =>
-          Number(
-            a.cellIndex ?? 0
-          ) -
-          Number(
-            b.cellIndex ?? 0
-          )
+    const list =
+      document.getElementById(
+        "arenaList"
       );
 
 
-    arenaEl.innerHTML = "";
-
-
-    if (!sorted.length) {
-
-      arenaEl.innerHTML = `
-
-        <div class="arena-row">
-
-          <div class="position">
-            —
-          </div>
-
-          <div class="opponent-name">
-            Нет данных Arena
-          </div>
-
-        </div>
-
-      `;
-
-    } else {
-
-      for (
-        const cell
-        of sorted
-      ) {
-
-        const row =
-          document.createElement(
-            "div"
-          );
-
-
-        row.className =
-          "arena-row";
-
-
-        const position =
-          cell.cellIndex ??
-          "—";
-
-
-        const opponentName =
-          cell.player?.name ||
-          cell.name ||
-          "Opponent";
-
-
-        const allyCode =
-          cell.player?.allyCode ||
-          cell.allyCode ||
-          "";
-
-
-        row.innerHTML = `
-
-          <div class="position">
-            ${escapeHtml(
-              String(position)
-            )}
-          </div>
-
-          <div class="opponent">
-
-            <div class="opponent-name">
-              ${escapeHtml(
-                opponentName
-              )}
-            </div>
-
-            <div class="opponent-code">
-
-              ${
-                allyCode
-                  ? `Ally Code ${escapeHtml(
-                      String(
-                        allyCode
-                      )
-                    )}`
-                  : ""
-              }
-
-            </div>
-
-          </div>
-
-        `;
-
-
-        arenaEl.appendChild(
-          row
-        );
-
-      }
-
-    }
-
-
-    arenaSection.style.display =
-      "block";
-
-
-    /*
-     * Squad.
-     */
-
-    renderSquad(
-      cells
+    section.classList.add(
+      "visible"
     );
 
-  }
 
-
-  /* =====================================================
-     SQUAD
-  ===================================================== */
-
-  async function renderSquad(
-    cells
-  ) {
-
-    squadEl.innerHTML = "";
+    list.innerHTML = "";
 
 
     /*
-     * Ищем unitDefId рекурсивно.
-     * Это надёжнее, чем предполагать
-     * конкретную структуру Comlink.
-     */
+      Comlink may return different
+      structures depending on version.
 
-    const found =
-      findUnitDefIds(
-        cells
-      );
+      Try several common locations.
+    */
 
-
-    const uniqueUnits =
-      [...new Set(found)]
-        .slice(0, 5);
-
-
-    if (!uniqueUnits.length) {
-
-      squadSection.style.display =
-        "none";
-
-      return;
-
-    }
+    let players =
+      data?.pvpProfile?.[0]
+        ?.rankings ||
+      data?.pvpProfile?.[0]
+        ?.player ||
+      data?.arena ||
+      data?.players ||
+      [];
 
 
-    squadSection.style.display =
-      "block";
-
-
-    const elements = [];
-
-
-    /*
-     * Сначала создаём все карточки.
-     */
-
-    for (
-      const unitDefId
-      of uniqueUnits
+    if (
+      !Array.isArray(players)
     ) {
 
-      const wrapper =
+      /*
+        If the current player arena
+        response contains only the
+        current player's profile,
+        display that player instead.
+      */
+
+      const name =
+        data?.name ||
+        data?.playerName;
+
+      const rank =
+        data?.pvpProfile?.[0]?.rank;
+
+      if (
+        name ||
+        rank
+      ) {
+
+        players = [
+          {
+            name,
+            rank,
+            allyCode:
+              data?.allyCode
+          }
+        ];
+
+      } else {
+
+        list.innerHTML =
+          `
+          <div class="empty">
+            Arena data received,
+            but ranking list was not
+            included in the response.
+          </div>
+          `;
+
+        return;
+      }
+    }
+
+
+    if (!players.length) {
+
+      list.innerHTML =
+        `
+        <div class="empty">
+          No arena players found.
+        </div>
+        `;
+
+      return;
+    }
+
+
+    const ownAllyCode =
+      String(
+        data?.allyCode ??
+        data?.player?.allyCode ??
+        ""
+      );
+
+
+    for (
+      const player of players
+    ) {
+
+      const row =
         document.createElement(
           "div"
         );
 
+      row.className =
+        "arena-row";
 
-      wrapper.className =
-        "unit";
 
+      const rank =
+        player.rank ??
+        player.currentRank ??
+        player.position ??
+        "—";
 
-      wrapper.innerHTML = `
 
-        <div class="portrait-wrap">
+      const name =
+        player.name ??
+        player.playerName ??
+        player.displayName ??
+        "Unknown";
 
-          <div class="portrait-placeholder">
-            …
-          </div>
 
-        </div>
+      const allyCode =
+        player.allyCode ??
+        player.allycode ??
+        "";
 
-        <div class="unit-name">
-          ${escapeHtml(
-            cleanUnitName(
-              unitDefId
-            )
-          )}
-        </div>
-
-      `;
-
-
-      squadEl.appendChild(
-        wrapper
-      );
-
-
-      elements.push({
-        unitDefId,
-        wrapper
-      });
-
-    }
-
-
-    /*
-     * Теперь параллельно запрашиваем
-     * картинки у Proxy.
-     */
-
-    await Promise.all(
-
-      elements.map(
-        async ({
-          unitDefId,
-          wrapper
-        }) => {
-
-          try {
-
-            const result =
-              await post(
-                "/characterImage",
-                {
-                  unitDefId
-                }
-              );
-
-
-            console.log(
-              "[Portrait]",
-              unitDefId,
-              result
-            );
-
-
-            if (
-              result?.ok &&
-              result?.url
-            ) {
-
-              const image =
-                document.createElement(
-                  "img"
-                );
-
-
-              image.className =
-                "portrait";
-
-
-              image.alt =
-                result.name ||
-                unitDefId;
-
-
-              image.loading =
-                "lazy";
-
-
-              image.src =
-                result.url;
-
-
-              const portraitWrap =
-                wrapper.querySelector(
-                  ".portrait-wrap"
-                );
-
-
-              portraitWrap.innerHTML =
-                "";
-
-
-              portraitWrap.appendChild(
-                image
-              );
-
-
-              image.onerror =
-                () => {
-
-                  portraitWrap.innerHTML = `
-
-                    <div class="portrait-placeholder">
-                      ?
-                    </div>
-
-                  `;
-
-                };
-
-
-              const nameEl =
-                wrapper.querySelector(
-                  ".unit-name"
-                );
-
-
-              if (
-                nameEl &&
-                result.name
-              ) {
-
-                nameEl.textContent =
-                  result.name;
-
-              }
-
-            } else {
-
-              console.warn(
-                "Portrait not found:",
-                unitDefId,
-                result
-              );
-
-            }
-
-          } catch (error) {
-
-            console.error(
-              "Portrait error:",
-              unitDefId,
-              error
-            );
-
-          }
-
-        }
-      )
-
-    );
-
-
-    renderDatacron(
-      cells
-    );
-
-  }
-
-
-  /* =====================================================
-     FIND UNIT DEF IDS
-  ===================================================== */
-
-  function findUnitDefIds(
-    value,
-    result = []
-  ) {
-
-    if (
-      value === null ||
-      value === undefined
-    ) {
-
-      return result;
-
-    }
-
-
-    if (
-      typeof value === "object"
-    ) {
 
       if (
-        typeof value.unitDefId ===
-        "string"
+        ownAllyCode &&
+        String(allyCode) ===
+          ownAllyCode
       ) {
-
-        result.push(
-          value.unitDefId
+        row.classList.add(
+          "me"
         );
-
       }
 
 
-      for (
-        const key
-        of Object.keys(value)
-      ) {
+      row.innerHTML =
+        `
+        <div class="arena-rank">
+          ${escapeHtml(rank)}
+        </div>
 
-        findUnitDefIds(
-          value[key],
-          result
-        );
+        <div class="arena-player">
 
-      }
+          <div class="arena-name">
+            ${escapeHtml(name)}
+          </div>
 
+          ${
+            allyCode
+              ? `
+                <div class="arena-ally">
+                  Ally Code ${escapeHtml(allyCode)}
+                </div>
+              `
+              : ""
+          }
+
+        </div>
+
+        <div class="arena-score">
+          ${player.skillRating ??
+            player.rating ??
+            ""}
+        </div>
+        `;
+
+
+      list.appendChild(
+        row
+      );
     }
-
-
-    return result;
-
   }
 
 
-  /* =====================================================
-     DATACRON
-  ===================================================== */
+  // ==========================================================
+  // SQUAD
+  // ==========================================================
 
-  function renderDatacron(
-    cells
+  function renderSquadFromArena(
+    data
   ) {
 
-    const found =
-      findDatacron(
-        cells
+    const cells =
+      findArenaCells(data);
+
+
+    const section =
+      document.getElementById(
+        "squadSection"
+      );
+
+    const squad =
+      document.getElementById(
+        "squad"
       );
 
 
-    if (!found) {
+    section.classList.add(
+      "visible"
+    );
 
-      datacronEl.style.display =
-        "none";
+
+    squad.innerHTML = "";
+
+
+    if (!cells.length) {
+
+      squad.innerHTML =
+        `
+        <div class="empty">
+          Squad не найдена в ответе Comlink.
+        </div>
+        `;
 
       return;
-
-    }
-
-
-    const id =
-      found.id ||
-      found.datacronId ||
-      "Unknown";
-
-
-    const setId =
-      found.setId ||
-      "—";
-
-
-    const tier =
-      found.highestTierApplied ??
-      "—";
-
-
-    datacronText.innerHTML = `
-
-      ID: ${escapeHtml(
-        String(id)
-      )}
-
-      <br>
-
-      Set: ${escapeHtml(
-        String(setId)
-      )}
-
-      <br>
-
-      Tier: ${escapeHtml(
-        String(tier)
-      )}
-
-    `;
-
-
-    datacronEl.style.display =
-      "block";
-
-  }
-
-
-  function findDatacron(
-    value
-  ) {
-
-    if (
-      !value ||
-      typeof value !==
-        "object"
-    ) {
-
-      return null;
-
-    }
-
-
-    if (
-      value.datacron &&
-      typeof value.datacron ===
-        "object"
-    ) {
-
-      return value.datacron;
-
-    }
-
-
-    if (
-      value.datacronId
-    ) {
-
-      return value;
-
     }
 
 
     for (
-      const key
-      of Object.keys(value)
+      const cell of cells
     ) {
 
-      const result =
-        findDatacron(
-          value[key]
-        );
+      const unitDefId =
+        cell.unitDefId ||
+        cell.unit?.unitDefId ||
+        cell.definitionId ||
+        "";
 
 
-      if (result) {
-
-        return result;
-
-      }
-
+      addUnitCard(
+        squad,
+        unitDefId
+      );
     }
-
-
-    return null;
-
   }
 
 
-  /* =====================================================
-     PORTRAIT STATUS TEST
-  ===================================================== */
+  // ==========================================================
+  // UNIT CARD
+  // ==========================================================
 
-  async function testPortraits() {
+  function addUnitCard(
+    container,
+    unitDefId
+  ) {
 
-    setStatus(
-      "Проверяю систему портретов..."
+    const card =
+      document.createElement(
+        "div"
+      );
+
+    card.className =
+      "unit-card";
+
+
+    const imageWrap =
+      document.createElement(
+        "div"
+      );
+
+    imageWrap.className =
+      "unit-image-wrap";
+
+
+    const placeholder =
+      document.createElement(
+        "div"
+      );
+
+    placeholder.className =
+      "unit-placeholder";
+
+    placeholder.textContent =
+      "…";
+
+
+    imageWrap.appendChild(
+      placeholder
     );
 
 
+    const name =
+      document.createElement(
+        "div"
+      );
+
+    name.className =
+      "unit-name";
+
+    name.textContent =
+      prettyUnitName(
+        unitDefId
+      );
+
+
+    const id =
+      document.createElement(
+        "div"
+      );
+
+    id.className =
+      "unit-id";
+
+    id.textContent =
+      unitDefId;
+
+
+    card.appendChild(
+      imageWrap
+    );
+
+    card.appendChild(
+      name
+    );
+
+    card.appendChild(
+      id
+    );
+
+
+    container.appendChild(
+      card
+    );
+
+
+    if (!unitDefId) {
+      placeholder.textContent =
+        "?";
+      return;
+    }
+
+
+    getCharacterImage(
+      unitDefId
+    )
+      .then(result => {
+
+        if (
+          result?.ok &&
+          result.url
+        ) {
+
+          const img =
+            document.createElement(
+              "img"
+            );
+
+          img.className =
+            "unit-image";
+
+          img.alt =
+            prettyUnitName(
+              unitDefId
+            );
+
+          img.src =
+            result.url;
+
+
+          img.onerror = () => {
+
+            imageWrap.innerHTML =
+              `
+              <div class="unit-placeholder">
+                ?
+              </div>
+              `;
+          };
+
+
+          imageWrap.innerHTML = "";
+
+          imageWrap.appendChild(
+            img
+          );
+
+        } else {
+
+          placeholder.textContent =
+            "?";
+        }
+
+      })
+      .catch(error => {
+
+        debug(
+          "Portrait error",
+          unitDefId,
+          error.message
+        );
+
+        placeholder.textContent =
+          "?";
+      });
+  }
+
+
+  // ==========================================================
+  // CHARACTER IMAGE
+  // ==========================================================
+
+  async function getCharacterImage(
+    unitDefId
+  ) {
+
+    const result =
+      await post(
+        "/characterImage",
+        {
+          unitDefId
+        }
+      );
+
+    return result;
+  }
+
+
+  // ==========================================================
+  // DATACRON
+  // ==========================================================
+
+  function renderDatacronFromArena(
+    data
+  ) {
+
+    const datacron =
+      data?.pvpProfile?.[0]
+        ?.squad?.datacron ||
+      data?.pvpProfile?.[0]
+        ?.datacron ||
+      data?.datacron;
+
+
+    const section =
+      document.getElementById(
+        "datacronSection"
+      );
+
+    const container =
+      document.getElementById(
+        "datacron"
+      );
+
+
+    if (!datacron) {
+
+      section.classList.remove(
+        "visible"
+      );
+
+      container.innerHTML = "";
+
+      return;
+    }
+
+
+    section.classList.add(
+      "visible"
+    );
+
+
+    const id =
+      datacron.id ??
+      "—";
+
+
+    const setId =
+      datacron.setId ??
+      "—";
+
+
+    const tier =
+      datacron.highestTierApplied ??
+      "—";
+
+
+    let affixes =
+      datacron.affixes ||
+      [];
+
+
+    if (
+      !Array.isArray(affixes)
+    ) {
+      affixes = [];
+    }
+
+
+    let affixHtml = "";
+
+
+    if (affixes.length) {
+
+      affixHtml =
+        `
+        <div class="affixes">
+
+          ${
+            affixes
+              .map(
+                affix =>
+                  `
+                  <div class="affix">
+                    ${escapeHtml(
+                      typeof affix === "string"
+                        ? affix
+                        : JSON.stringify(
+                            affix
+                          )
+                    )}
+                  </div>
+                  `
+              )
+              .join("")
+          }
+
+        </div>
+        `;
+    }
+
+
+    container.innerHTML =
+      `
+      <div class="datacron-id">
+        ${escapeHtml(id)}
+      </div>
+
+      <div class="datacron-meta">
+        Set: ${escapeHtml(setId)}
+        · Tier: ${escapeHtml(tier)}
+      </div>
+
+      ${affixHtml}
+      `;
+  }
+
+
+  // ==========================================================
+  // PORTRAIT TEST
+  // ==========================================================
+
+  async function testPortraits() {
+
+    clearDebug();
+
     try {
+
+      setStatus(
+        "Проверяю индекс портретов…"
+      );
+
 
       const response =
         await fetch(
-          `${PROXY}/portraitStatus`
+          "/portraitStatus"
         );
 
 
@@ -1692,77 +1981,183 @@
         await response.json();
 
 
-      debug(data);
+      debug(
+        "PORTRAIT STATUS",
+        data
+      );
+
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          `HTTP ${response.status}`
+        );
+      }
 
 
       setStatus(
-        `Портретов найдено: ${
-          data.portraits ??
-          "?"
-        }`
+        `Портретов найдено: ${data.portraits}`,
+        "success"
       );
-
 
     } catch (error) {
 
-      setStatus(
-        `Ошибка портретов: ${error.message}`,
-        true
+      debug(
+        "ERROR",
+        error.message
       );
 
+      setStatus(
+        "Ошибка: " +
+        error.message,
+        "error"
+      );
     }
-
   }
 
 
-  /* =====================================================
-     UNIT NAME
-  ===================================================== */
+  // ==========================================================
+  // GAME DATA TEST
+  // ==========================================================
 
-  function cleanUnitName(
+  async function testGameData() {
+
+    clearDebug();
+
+    try {
+
+      setStatus(
+        "Проверяю game data…"
+      );
+
+
+      const response =
+        await fetch(
+          "/gameDataStatus"
+        );
+
+
+      const data =
+        await response.json();
+
+
+      debug(
+        "GAME DATA STATUS",
+        data
+      );
+
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          `HTTP ${response.status}`
+        );
+      }
+
+
+      setStatus(
+        "Game data загружена",
+        "success"
+      );
+
+    } catch (error) {
+
+      debug(
+        "ERROR",
+        error.message
+      );
+
+      setStatus(
+        "Ошибка: " +
+        error.message,
+        "error"
+      );
+    }
+  }
+
+
+  // ==========================================================
+  // PRETTY UNIT NAME
+  // ==========================================================
+
+  function prettyUnitName(
     unitDefId
   ) {
 
-    return String(
-      unitDefId || ""
-    )
+    if (!unitDefId) {
+      return "Unknown";
+    }
 
-      .replace(
-        /:SEVEN_STAR$/i,
-        ""
-      )
 
-      .replace(
-        /:SIX_STAR$/i,
-        ""
-      )
+    const base =
+      String(unitDefId)
+        .split(":")[0];
 
-      .replace(
-        /:FIVE_STAR$/i,
-        ""
-      )
 
-      .replace(
-        /:FOUR_STAR$/i,
-        ""
-      )
+    const names = {
 
-      .replace(
-        /_LEGENDARY$/i,
-        ""
-      )
+      GLLEIA:
+        "GL Leia",
 
+      CAPTAINDROGAN:
+        "Captain Drogan",
+
+      R2D2_LEGENDARY:
+        "R2-D2",
+
+      CAPTAINREX:
+        "Captain Rex",
+
+      C3POCHEWBACCA:
+        "Threepio & Chewie",
+
+      JABBATHEHUTT:
+        "Jabba",
+
+      LORDVADER:
+        "Lord Vader",
+
+      DARTHVADER:
+        "Darth Vader",
+
+      REY:
+        "Rey",
+
+      SUPREMELEADERKYLOREN:
+        "Supreme Leader Kylo Ren",
+
+      KYLOREN:
+        "Kylo Ren",
+
+      LUKEHERMITLEGENDARY:
+        "Jedi Master Luke",
+
+      PALPATINE:
+        "Emperor Palpatine",
+
+      GRANDMASTERYODA:
+        "Grand Master Yoda"
+    };
+
+
+    if (names[base]) {
+      return names[base];
+    }
+
+
+    return base
+      .replace(/_/g, " ")
       .replace(
-        /_/g,
-        " "
+        /\b\w/g,
+        letter =>
+          letter.toUpperCase()
       );
-
   }
 
 
-  /* =====================================================
-     HTML ESCAPE
-  ===================================================== */
+  // ==========================================================
+  // ESCAPE HTML
+  // ==========================================================
 
   function escapeHtml(
     value
@@ -1771,53 +2166,53 @@
     return String(
       value ?? ""
     )
-
       .replace(
         /&/g,
         "&amp;"
       )
-
       .replace(
         /</g,
         "&lt;"
       )
-
       .replace(
         />/g,
         "&gt;"
       )
-
       .replace(
         /"/g,
         "&quot;"
       )
-
       .replace(
         /'/g,
         "&#039;"
       );
-
   }
 
 
-  /* =====================================================
-     ENTER
-  ===================================================== */
+  // ==========================================================
+  // ENTER KEY
+  // ==========================================================
 
   allyCodeInput.addEventListener(
     "keydown",
-    (event) => {
+    event => {
 
       if (
-        event.key ===
-        "Enter"
+        event.key === "Enter"
       ) {
-
         loadArena();
-
       }
 
     }
+  );
+
+
+  // ==========================================================
+  // INITIAL
+  // ==========================================================
+
+  debug(
+    "Arena Tracker initialized"
   );
 
 </script>
