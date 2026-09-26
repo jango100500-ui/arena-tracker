@@ -7,14 +7,15 @@ const PORT = process.env.PORT || 3000;
 const COMLINK_URL = (process.env.COMLINK_URL || "https://arena-tracker-2uod.onrender.com").replace(/\/+$/, "");
 const ASSET_URL = (process.env.ASSET_URL || "https://arena-tracker-assets.onrender.com").replace(/\/+$/, "");
 const UNITS_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/units.json.br";
+const VERSIONS_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/allVersions.json";
 
 app.use(cors());
 app.use(express.json());
 
 let unitsCache = null;
 let unitsCacheTime = 0;
-let metadataCache = null;
-let metadataCacheTime = 0;
+let versionsCache = null;
+let versionsCacheTime = 0;
 
 async function fetchJson(url, options = {}) {
     const response = await fetch(url, options);
@@ -68,21 +69,27 @@ async function getUnits() {
     return units;
 }
 
-async function getMetadata() {
-    if (metadataCache && Date.now() - metadataCacheTime < 300000) {
-        return metadataCache;
+async function getAssetVersion() {
+    if (versionsCache && Date.now() - versionsCacheTime < 300000) {
+        return versionsCache;
     }
 
-    metadataCache = await fetchJson(`${COMLINK_URL}/metadata`);
-    metadataCacheTime = Date.now();
+    const data = await fetchJson(VERSIONS_URL);
+    const version = data?.assetVersion;
 
-    return metadataCache;
+    if (!version) {
+        throw new Error("assetVersion not found");
+    }
+
+    versionsCache = version;
+    versionsCacheTime = Date.now();
+
+    return version;
 }
 
 async function getUnit(definitionId) {
     const baseId = String(definitionId).split(":")[0];
     const units = await getUnits();
-
     const unit = units.find(item => item.baseId === baseId);
 
     if (!unit) {
@@ -93,6 +100,26 @@ async function getUnit(definitionId) {
         ...unit,
         definitionId
     };
+}
+
+function detectAssetOS(req) {
+    const requested = Number(req.query.assetOS);
+
+    if ([0, 1, 2].includes(requested)) {
+        return requested;
+    }
+
+    const userAgent = String(req.headers["user-agent"] || "");
+
+    if (/iPhone|iPad|iPod/i.test(userAgent)) {
+        return 2;
+    }
+
+    if (/Android/i.test(userAgent)) {
+        return 1;
+    }
+
+    return 0;
 }
 
 app.get("/health", (_, res) => {
@@ -201,29 +228,23 @@ app.get("/characterImage", async (req, res) => {
         if (!unit.thumbnailName) {
             return res.status(404).json({
                 error: "thumbnailName not found",
+                definitionId,
                 unit
             });
         }
 
-        const metadata = await getMetadata();
-        const version = metadata?.assetVersion;
-
-        if (!version) {
-            return res.status(500).json({
-                error: "assetVersion not found",
-                metadata
-            });
-        }
+        const version = await getAssetVersion();
+        const assetOS = detectAssetOS(req);
 
         const assetName = String(unit.thumbnailName)
             .replace(/^tex\./, "")
             .replace(/\.[^/.]+$/, "");
 
         const url = new URL(`${ASSET_URL}/Asset/single`);
-        url.searchParams.set("forceReDownload", "false");
-        url.searchParams.set("version", String(version));
         url.searchParams.set("assetName", assetName);
-        url.searchParams.set("assetOS", "1");
+        url.searchParams.set("version", String(version));
+        url.searchParams.set("forceReDownload", "false");
+        url.searchParams.set("assetOS", String(assetOS));
 
         const response = await fetch(url);
 
@@ -237,14 +258,15 @@ app.get("/characterImage", async (req, res) => {
                 baseId: unit.baseId,
                 thumbnailName: unit.thumbnailName,
                 assetName,
-                version
+                version,
+                assetOS
             });
         }
 
         const buffer = Buffer.from(await response.arrayBuffer());
 
         res.set("Cache-Control", "public, max-age=86400");
-        res.set("Content-Type", response.headers.get("content-type") || "image/png");
+        res.set("Content-Type", "image/png");
         res.send(buffer);
     } catch (error) {
         res.status(500).json({ error: error.message });
