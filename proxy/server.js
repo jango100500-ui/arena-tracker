@@ -9,6 +9,7 @@ const ASSET_URL = (process.env.ASSET_URL || "https://arena-tracker-assets.onrend
 const UNITS_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/units.json.br";
 const VERSIONS_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/allVersions.json";
 const PLAYER_TITLES_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/playerTitle.json";
+const PLAYER_PORTRAITS_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/playerPortrait.json";
 const CATEGORIES_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/category.json";
 const ENG_LOCALE_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/Loc_ENG_US.txt.json.br";
 const RUS_LOCALE_URL = "https://raw.githubusercontent.com/swgoh-utils/gamedata/main/Loc_RUS_RU.txt.json.br";
@@ -54,13 +55,9 @@ async function fetchBrotliJson(url) {
 }
 
 function collectionData(parsed) {
-    if (Array.isArray(parsed)) {
-        return parsed;
-    }
+    if (Array.isArray(parsed)) return parsed;
 
-    if (Array.isArray(parsed?.data)) {
-        return parsed.data;
-    }
+    if (Array.isArray(parsed?.data)) return parsed.data;
 
     if (parsed?.data && typeof parsed.data === "object") {
         return Object.values(parsed.data);
@@ -74,19 +71,14 @@ function collectionData(parsed) {
 }
 
 function normalizeIds(value) {
-    if (Array.isArray(value)) {
-        return value.flatMap(normalizeIds);
-    }
+    if (Array.isArray(value)) return value.flatMap(normalizeIds);
 
     if (typeof value === "string" || typeof value === "number") {
         return [String(value)];
     }
 
     if (value && typeof value === "object") {
-        if (value.id !== undefined) {
-            return normalizeIds(value.id);
-        }
-
+        if (value.id !== undefined) return normalizeIds(value.id);
         return Object.values(value).flatMap(normalizeIds);
     }
 
@@ -151,6 +143,13 @@ async function getPlayerTitles() {
     }, 3600000);
 }
 
+async function getPlayerPortraits() {
+    return getCached("playerPortraits", async () => {
+        const parsed = await fetchJson(PLAYER_PORTRAITS_URL);
+        return indexById(collectionData(parsed));
+    }, 3600000);
+}
+
 async function getCategories() {
     return getCached("categories", async () => {
         const parsed = await fetchJson(CATEGORIES_URL);
@@ -159,9 +158,7 @@ async function getCategories() {
 }
 
 function buildLocalizationMap(node, map = {}) {
-    if (!node) {
-        return map;
-    }
+    if (!node) return map;
 
     if (Array.isArray(node)) {
         for (const item of node) {
@@ -194,18 +191,31 @@ async function getLocalization(language = "ENG") {
     }, 3600000);
 }
 
+function resolvePlayerPortraits(player, playerPortraits) {
+    const unlocked = Array.isArray(player?.unlockedPlayerPortrait)
+        ? player.unlockedPlayerPortrait
+        : [];
+
+    return unlocked.map(item => {
+        const id = String(item?.id || "");
+        const definition = playerPortraits.get(id) || {};
+
+        return {
+            id,
+            icon: item?.icon || definition.icon || "",
+            name: item?.name || definition.name || definition.nameKey || id
+        };
+    }).filter(item => item.id);
+}
+
 function resolvePlayerTitle(player, playerTitles, localization) {
     const id = String(player?.selectedPlayerTitle?.id || "");
 
-    if (!id) {
-        return "";
-    }
+    if (!id) return "";
 
     const definition = playerTitles.get(id);
 
-    if (!definition) {
-        return id;
-    }
+    if (!definition) return id;
 
     const nameKey = definition.nameKey || definition.titleKey || definition.textKey || "";
 
@@ -290,12 +300,20 @@ function getRelicLevel(relic) {
 }
 
 async function enrichArena(arena, player) {
-    const [units, categories, localizationEng, localizationRus, playerTitles] = await Promise.all([
+    const [
+        units,
+        categories,
+        localizationEng,
+        localizationRus,
+        playerTitles,
+        playerPortraits
+    ] = await Promise.all([
         getUnits(),
         getCategories(),
         getLocalization("ENG"),
         getLocalization("RUS"),
-        getPlayerTitles()
+        getPlayerTitles(),
+        getPlayerPortraits()
     ]);
 
     const unitMap = new Map();
@@ -306,7 +324,9 @@ async function enrichArena(arena, player) {
         }
     }
 
-    const rosterMap = new Map((player.rosterUnit || []).map(unit => [unit.definitionId, unit]));
+    const rosterMap = new Map(
+        (player.rosterUnit || []).map(unit => [unit.definitionId, unit])
+    );
 
     const pvpProfile = (arena.pvpProfile || []).map(profile => ({
         ...profile,
@@ -319,15 +339,24 @@ async function enrichArena(arena, player) {
                     const unit = unitMap.get(baseId) || {};
                     const roster = rosterMap.get(definitionId) || {};
                     const categoryIds = getUnitCategoryIds(unit);
+
                     const isGalacticLegend = Boolean(
                         unit.legend === true ||
                         unit.legend === 1 ||
                         String(unit.legend).toLowerCase() === "true" ||
                         categoryIds.some(id => id.toLowerCase() === "galactic_legend")
                     );
+
                     const nameKey = unit.nameKey || "";
-                    const name = localizationRus[nameKey] || localizationEng[nameKey] || nameKey || baseId;
-                    const alignment = isGalacticLegend ? "galactic_legend" : getUnitAlignment(unit, categories);
+                    const name =
+                        localizationRus[nameKey] ||
+                        localizationEng[nameKey] ||
+                        nameKey ||
+                        baseId;
+
+                    const alignment = isGalacticLegend
+                        ? "galactic_legend"
+                        : getUnitAlignment(unit, categories);
 
                     return {
                         ...cell,
@@ -350,6 +379,9 @@ async function enrichArena(arena, player) {
         allyCode: player.allyCode || arena.allyCode,
         guildName: player.guildName || arena.guildName,
         selectedPlayerTitle: player.selectedPlayerTitle || null,
+        selectedPlayerPortrait: player.selectedPlayerPortrait || null,
+        unlockedPlayerPortrait: player.unlockedPlayerPortrait || [],
+        playerPortraits: resolvePlayerPortraits(player, playerPortraits),
         title: resolvePlayerTitle(player, playerTitles, localizationRus),
         pvpProfile
     };
@@ -452,16 +484,25 @@ app.get("/profile", async (req, res) => {
             return res.status(400).json({ error: "allyCode is required" });
         }
 
-        const [player, playerTitles, localizationRus] = await Promise.all([
+        const [
+            player,
+            playerTitles,
+            localizationRus,
+            playerPortraits
+        ] = await Promise.all([
             requestComlink("/player", {
                 allyCode: String(allyCode)
             }),
             getPlayerTitles(),
-            getLocalization("RUS")
+            getLocalization("RUS"),
+            getPlayerPortraits()
         ]);
 
         res.json({
             ...player,
+            selectedPlayerPortrait: player.selectedPlayerPortrait || null,
+            unlockedPlayerPortrait: player.unlockedPlayerPortrait || [],
+            playerPortraits: resolvePlayerPortraits(player, playerPortraits),
             title: resolvePlayerTitle(player, playerTitles, localizationRus)
         });
     } catch (error) {
@@ -477,18 +518,92 @@ app.post("/profile", async (req, res) => {
             return res.status(400).json({ error: "allyCode is required" });
         }
 
-        const [player, playerTitles, localizationRus] = await Promise.all([
+        const [
+            player,
+            playerTitles,
+            localizationRus,
+            playerPortraits
+        ] = await Promise.all([
             requestComlink("/player", {
                 allyCode: String(allyCode)
             }),
             getPlayerTitles(),
-            getLocalization("RUS")
+            getLocalization("RUS"),
+            getPlayerPortraits()
         ]);
 
         res.json({
             ...player,
+            selectedPlayerPortrait: player.selectedPlayerPortrait || null,
+            unlockedPlayerPortrait: player.unlockedPlayerPortrait || [],
+            playerPortraits: resolvePlayerPortraits(player, playerPortraits),
             title: resolvePlayerTitle(player, playerTitles, localizationRus)
         });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get("/portraitImage", async (req, res) => {
+    try {
+        const { portraitId } = req.query;
+
+        if (!portraitId) {
+            return res.status(400).json({ error: "portraitId is required" });
+        }
+
+        const portraits = await getPlayerPortraits();
+        const portrait = portraits.get(String(portraitId));
+
+        if (!portrait) {
+            return res.status(404).json({
+                error: "Portrait not found",
+                portraitId
+            });
+        }
+
+        const icon = String(portrait.icon || "");
+
+        if (!icon) {
+            return res.status(404).json({
+                error: "Portrait icon not found",
+                portraitId
+            });
+        }
+
+        const version = await getAssetVersion();
+        const assetOS = detectAssetOS(req);
+        const assetName = icon
+            .replace(/^tex\./, "")
+            .replace(/\.[^/.]+$/, "");
+
+        const url = new URL(`${ASSET_URL}/Asset/single`);
+        url.searchParams.set("assetName", assetName);
+        url.searchParams.set("version", String(version));
+        url.searchParams.set("forceReDownload", "false");
+        url.searchParams.set("assetOS", String(assetOS));
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            const text = await response.text();
+
+            return res.status(response.status).json({
+                error: "Asset extractor error",
+                details: text.slice(0, 500),
+                portraitId,
+                icon,
+                assetName,
+                version,
+                assetOS
+            });
+        }
+
+        const buffer = Buffer.from(await response.arrayBuffer());
+
+        res.set("Cache-Control", "public, max-age=86400");
+        res.set("Content-Type", "image/png");
+        res.send(buffer);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
