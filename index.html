@@ -67,6 +67,12 @@ button:disabled{opacity:.5;cursor:default}
 .log-unit{flex:0 0 54px;text-align:center}
 .log-unit img{width:54px;height:54px;border-radius:50%;object-fit:cover;background:#0b0c0e;border:2px solid #34363d}
 .log-unit-name{font-size:9px;line-height:1.1;margin-top:4px;color:#c8cad0;word-break:break-word}
+.portrait-card{background:#18191d;border:1px solid #292b31;border-radius:16px;padding:18px;margin-top:20px}
+.portrait-title{margin:0 0 12px;font-size:20px;font-weight:700}
+.portrait-list{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:thin}
+.portrait{flex:0 0 76px;width:76px;height:76px;border-radius:50%;padding:3px;background:#292b31}
+.portrait.selected{padding:2px;background:#fff}
+.portrait img{width:100%;height:100%;display:block;border-radius:50%;object-fit:cover;background:#0b0c0e}
 .json-card{background:#15161a;border-radius:14px;overflow:hidden;margin-top:20px}
 .json-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#1d1e23}
 .json-title{font-size:13px;color:#a9abb3}
@@ -136,6 +142,11 @@ h1{font-size:24px}
 </div>
 <pre id="json">{}</pre>
 </section>
+
+<section class="portrait-card hidden" id="portraitCard">
+<div class="portrait-title">Твои портреты</div>
+<div class="portrait-list" id="portraitList"></div>
+</section>
 </div>
 
 <script>
@@ -157,6 +168,8 @@ const monitorDot=document.getElementById("monitorDot");
 const monitorMeta=document.getElementById("monitorMeta");
 const logCard=document.getElementById("logCard");
 const log=document.getElementById("log");
+const portraitCard=document.getElementById("portraitCard");
+const portraitList=document.getElementById("portraitList");
 
 let monitorTimer=null;
 let monitoring=false;
@@ -260,10 +273,6 @@ function saveHistory(code){
     localStorage.setItem(getStorageKey(code),JSON.stringify(history.slice(0,500)));
 }
 
-function snapshotForTab(data,tab){
-    return normalizeArena(data).find(item=>String(item.tab)===String(tab));
-}
-
 function makeSnapshot(data){
     const arenas=normalizeArena(data);
     return {
@@ -277,6 +286,7 @@ function addEvent(previous,current,tab){
 
     const delta=previous.rank-current.rank;
     const win=delta>0;
+
     const event={
         id:`${Date.now()}_${Math.random().toString(36).slice(2)}`,
         time:Date.now(),
@@ -336,9 +346,7 @@ function renderHistory(){
         const delta=Math.abs(event.delta);
         const arrow=event.result==="win"?"↑":"↓";
         const title=event.result==="win"?"ПОБЕДА":"ПОРАЖЕНИЕ";
-        const text=event.result==="win"
-            ?`#${event.from} → #${event.to}`
-            :`#${event.from} → #${event.to}`;
+        const text=`#${event.from} → #${event.to}`;
 
         return `
             <article class="log-entry ${event.result}">
@@ -388,6 +396,7 @@ function renderArena(data){
 
         ${profiles.map(profile=>{
             const cells=profile?.squad?.cell||[];
+
             return `
                 <div class="card">
                     <h2>Арена ${profile.tab||""}</h2>
@@ -402,6 +411,25 @@ function renderArena(data){
 
     result.classList.remove("hidden");
     monitorCard.classList.remove("hidden");
+    renderPortraits(data);
+}
+
+function renderPortraits(data){
+    const portraits=Array.isArray(data.playerPortraits)?data.playerPortraits:[];
+    const selectedId=String(data?.selectedPlayerPortrait?.id||"");
+
+    if(!portraits.length){
+        portraitCard.classList.add("hidden");
+        return;
+    }
+
+    portraitList.innerHTML=portraits.map(portrait=>`
+        <div class="portrait ${String(portrait.id)===selectedId?"selected":""}">
+            <img src="${API}/portraitImage?portraitId=${encodeURIComponent(portrait.id)}" alt="${escapeHtml(portrait.name||portrait.id)}" loading="lazy">
+        </div>
+    `).join("");
+
+    portraitCard.classList.remove("hidden");
 }
 
 function renderProfile(data){
@@ -431,6 +459,7 @@ function renderProfile(data){
     `;
 
     result.classList.remove("hidden");
+    renderPortraits(data);
 }
 
 async function fetchArena(){
@@ -551,12 +580,15 @@ allyCode.addEventListener("change",()=>{
 
 copyBtn.addEventListener("click",async()=>{
     await navigator.clipboard.writeText(json.textContent);
+
     const old=copyBtn.textContent;
     copyBtn.textContent="Скопировано";
+
     setTimeout(()=>copyBtn.textContent=old,1200);
 });
 
 const initialCode=allyCode.value.replace(/\D/g,"");
+
 if(initialCode) loadHistory(initialCode);
 </script>
 </body>
